@@ -2,6 +2,8 @@ import express from "express";
 import pool, { hash, compare, genToken} from "../config/db.js";
 import joi from 'joi'
 import nativeQueries from '../nativequeries/nativeQueries.json' assert {type : 'json'}
+import errorMessages from '../config/errorMessages.json' assert {type : 'json'}
+import successMessages from '../config/successMessages.json' assert {type : 'json'}
 
 const userSchema = joi.object({
     name: joi.string().min(3).required(),
@@ -12,12 +14,12 @@ const userSchema = joi.object({
 export const register = async (req, res) => {
   const { error } = userSchema.validate(req.body);
   if (error) {
-    return res.status(400).json({ message: error.details[0].message });
+    return res.status(400).json({ message:errorMessages.validationError , error: error.message });
   }
   const { name, email, password } = req.body;
 
   if (!name || !email || !password) {
-    return res.status(400).json({ message: "All fields are required." });
+    return res.status(400).json({ message: errorMessages.missingFields });
   }
 
   try {
@@ -27,7 +29,7 @@ export const register = async (req, res) => {
     );
 
     if (existingUsers.length > 0) {
-      return res.status(409).json({ message: "User already exists.", user: existingUsers[0] });
+      return res.status(409).json({ message: errorMessages.userExists, user: existingUsers[0] });
     }
 
     const hashedPassword = await hash(password);
@@ -38,10 +40,10 @@ export const register = async (req, res) => {
       hashedPassword,
     ]);
 
-    return res.status(201).json({ message: "User registered successfully." });
+    return res.status(201).json({ message: successMessages.userRegistered });
   } catch (error) {
-    console.error("Error during registration:", error.message);
-    return res.status(500).json({ message: "Internal server error." });
+    console.error(`${errorMessages.registrationFailed}`, error.message);
+    return res.status(500).json({ message: errorMessages.internalServerError});
   }
 };
 
@@ -49,7 +51,7 @@ export const login = async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return res.status(400).json({ message: "All fields are required." });
+    return res.status(400).json({ message: errorMessages.missingFields });
   }
 
   try {
@@ -59,19 +61,19 @@ export const login = async (req, res) => {
     );
 
     if (users.length === 0) {
-      return res.status(401).json({ message: "Invalid username or password." });
+      return res.status(401).json({ message: errorMessages.invalidCredentials });
     }
 
     const user = users[0];
     const isValid = await compare(password, user.password);
 
     if (!isValid) {
-      return res.status(401).json({ message: "Invalid username or password." });
+      return res.status(401).json({ message: errorMessages.invalidCredentials });
     }
     const token = await genToken(user.id , user.name , user.email);
 
     return res.status(200).json({
-      message: "Login successful.",
+      message: successMessages.loginSuccessful,
       user: {
         id: user.id,
         name: user.name,
@@ -81,7 +83,7 @@ export const login = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Error during login:", error.message);
-    return res.status(500).json({ message: "Internal server error." });
+    console.error(`${errorMessages.loginFailed}`, error.message);
+    return res.status(500).json({ message: errorMessages.internalServerError });
   }
 };

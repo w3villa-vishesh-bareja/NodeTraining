@@ -1,0 +1,23 @@
+{
+  "validationError": "Validation failed. Please check your input.",
+  
+  "missingFields": "All fields are required.",
+  
+  "userExists": "User already exists.",
+  
+  "registrationFailed": "Error during registration. Please try again later.",
+  
+  "invalidCredentials": "Invalid username or password.",
+  
+  "loginFailed": "Error during login. Please try again later.",
+  
+  "internalServerError": "Internal server error. Please contact support.",
+  
+  "hashingFailed": "Error in hashing password . Please try again",
+  
+  "passwordCompareFailed": "Error in comparing passwords",
+  
+  "TokenGenerationError": "Error in generating Jwt token",
+  
+  "TokenVerificationError": "Error in verifying error"
+}

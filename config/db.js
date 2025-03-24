@@ -1,6 +1,8 @@
 import mysql from "mysql2/promise";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import errorMessages from './errorMessages.json' assert {type : 'json'}
+
 
 export const pool = mysql.createPool({
   host: "localhost",
@@ -28,7 +30,7 @@ export async function  hash(password){
     const salt = await bcrypt.genSalt(10);
     return await bcrypt.hash(password,salt)
   }catch(error){
-    crossOriginIsolated.error('Error hashing password' , err)
+    crossOriginIsolated.error(`${errorMessages.hashingFailed}` , err)
   }
 }
 
@@ -37,7 +39,7 @@ export async function compare(EnteredPassword , UserPassword){
     const isMatch = await bcrypt.compare(EnteredPassword, UserPassword);
     return isMatch;
   } catch (error) {
-    console.error('Error comparing passwords:', error.message);
+    console.error(`${errorMessages.passwordCompareFailed}`, error.message);
     return false;
   }
 }
@@ -46,7 +48,7 @@ export async function genToken(id,name,email){
   try{
     return await jwt.sign({id,name,email},process.env.JWT_SECRET_KEY,{expiresIn: '1h'});
   }catch(err){
-    console.error("Error in creating toke",err.message);
+    console.error(`${errorMessages.TokenGenerationError}`,err.message);
   }
 }
 
@@ -55,7 +57,7 @@ export async function verifyToken(token){
     const decoded =  await jwt.verify(token,process.env.JWT_SECRET_KEY);
     return decoded;
   }catch(err){
-    console.error("Error in Verifying token:" , err.message)
+    console.error(`${errorMessages.TokenVerificationError}`, err.message)
     return null;
   }
 }
