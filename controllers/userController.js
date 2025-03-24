@@ -1,7 +1,19 @@
 import express from "express";
 import pool, { hash, compare, genToken} from "../config/db.js";
+import joi from 'joi'
+import nativeQueries from '../nativequeries/nativeQueries.json' assert {type : 'json'}
 
+const userSchema = joi.object({
+    name: joi.string().min(3).required(),
+    email: joi.string().email().required(),
+    password: joi.string().min(6).required(),
+
+})
 export const register = async (req, res) => {
+  const { error } = userSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ message: error.details[0].message });
+  }
   const { name, email, password } = req.body;
 
   if (!name || !email || !password) {
@@ -10,7 +22,7 @@ export const register = async (req, res) => {
 
   try {
     const [existingUsers] = await pool.query(
-      "SELECT id, name, email FROM users WHERE email = ?",
+      nativeQueries.getUser,
       [email]
     );
 
@@ -20,7 +32,7 @@ export const register = async (req, res) => {
 
     const hashedPassword = await hash(password);
 
-    await pool.query("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", [
+    await pool.query(nativeQueries.createUser, [
       name,
       email,
       hashedPassword,
@@ -42,7 +54,7 @@ export const login = async (req, res) => {
 
   try {
     const [users] = await pool.query(
-      "SELECT id, name, email, password FROM users WHERE email = ?",
+      nativeQueries.getUser,
       [email]
     );
 

@@ -1,0 +1,5 @@
+{
+    "getUser" : "SELECT id, name, email FROM users WHERE email = ?",
+
+    "createUser": "INSERT INTO users (name, email, password) VALUES (?, ?, ?)"
+}
