@@ -1,5 +1,5 @@
 import express from "express";
-import pool, { hash, compare } from "../config/db.js";
+import pool, { hash, compare, genToken} from "../config/db.js";
 
 export const register = async (req, res) => {
   const { name, email, password } = req.body;
@@ -56,6 +56,7 @@ export const login = async (req, res) => {
     if (!isValid) {
       return res.status(401).json({ message: "Invalid username or password." });
     }
+    const token = await genToken(user.id , user.name , user.email);
 
     return res.status(200).json({
       message: "Login successful.",
@@ -64,7 +65,9 @@ export const login = async (req, res) => {
         name: user.name,
         email: user.email,
       },
+      token:token,
     });
+
   } catch (error) {
     console.error("Error during login:", error.message);
     return res.status(500).json({ message: "Internal server error." });
