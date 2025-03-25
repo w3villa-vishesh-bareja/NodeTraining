@@ -5,6 +5,10 @@ export const handleGoogleCallback = async (req,res)=>{
     const user = req.user;
     const token = await genToken(user.id , user.name , user.email)
     console.log(token)
-    res.header('Authorization', 'Bearer ' + token);
-    res.redirect('http://localhost:5173')
+    res.cookie('token', token, {
+        httpOnly: true, 
+        secure: false,  
+        maxAge: 3600000 // 1 hour
+      });
+      res.redirect('http://localhost:5173');
 }

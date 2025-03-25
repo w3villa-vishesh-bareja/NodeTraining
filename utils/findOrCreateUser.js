@@ -1,7 +1,8 @@
 import pool from "../config/db.js";
 import nativeQueries from "../nativequeries/nativeQueries.json" assert { type: "json" };
 import errorMessages from '../config/errorMessages.json' assert {type:'json'}
-import {hash} from '../config/db.js'
+import {hash, generateRandomString} from '../config/db.js'
+
 
 export async function findOrCreateUser(profile) {
   try {
@@ -14,11 +15,12 @@ export async function findOrCreateUser(profile) {
     let user;
     if (result.length === 0) {
       try{
-        const hashedPassword = await hash('random');  // replace with a random password value
+        const randomPassword = generateRandomString();
+        const hashedPassword = await hash(randomPassword);  
         console.log(hashedPassword)
         await pool.query(
-          nativeQueries.createUser,
-          [profile.displayName, profile.emails[0].value,hashedPassword]
+          nativeQueries.createUserWithSocial,
+          [profile.displayName, profile.emails[0].value,hashedPassword,1]
         );hash("random"); 
         result = await pool.query(nativeQueries.getUser, [
           profile.emails[0].value,

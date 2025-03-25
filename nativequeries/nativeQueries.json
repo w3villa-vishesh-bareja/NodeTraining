@@ -1,5 +1,7 @@
 {
     "getUser" : "SELECT id, name, email FROM users WHERE email = ?",
 
-    "createUser": "INSERT INTO users (name, email, password) VALUES (?, ?, ?)"
+    "createUser": "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
+
+    "createUserWithSocial": "INSERT INTO users (name, email, password, isSocial) VALUES (?, ?, ?, ?)"
 }
