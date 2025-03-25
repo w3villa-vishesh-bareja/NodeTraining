@@ -19,5 +19,7 @@
   
   "TokenGenerationError": "Error in generating Jwt token",
   
-  "TokenVerificationError": "Error in verifying error"
+  "TokenVerificationError": "Error in verifying error",
+
+  "GoogleLoginError" : "Error in google Login"
 }
