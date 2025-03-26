@@ -6,27 +6,33 @@ import {hash, generateRandomString} from '../config/db.js'
 
 export async function findOrCreateUser(profile) {
   try {
-    console.log("in find",profile.emails[0].value)
     let result;
      [result] = await pool.query(nativeQueries.getUser, [
       profile.emails[0].value,
     ]);
-    // result = result[0]
     let user;
+
     if (result.length === 0) {
       try{
         const randomPassword = generateRandomString();
         const hashedPassword = await hash(randomPassword);  
         console.log(hashedPassword)
+
+        //creating user with isSocial = 1
+        console.log("creating user")
         await pool.query(
           nativeQueries.createUserWithSocial,
           [profile.displayName, profile.emails[0].value,hashedPassword,1]
-        );hash("random"); 
+        );
+        console.log("getting user")
+        //Fetching the same user for furthur use
         result = await pool.query(nativeQueries.getUser, [
           profile.emails[0].value,
         ]);
+        console.log("adding user to social")
+        await pool.query(nativeQueries.addSocialUser , [result[0].id , 'Google' , profile.id]);
       }catch(err){
-        console.log(err.message)
+        console.error(err.message)
       }
     }
     user = result[0];

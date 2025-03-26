@@ -5,13 +5,14 @@ import passport from 'passport'
 import userRoutes from './routes/userRoute.js'
 import googleRoutes from './routes/googleRoute.js'
 
-dotenv.config();
+
 const app = express();
 app.use(express.json());
 app.use(cors({
-    origin: 'http://localhost:5173',
+    origin: ['http://localhost:5173','*'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'], 
     credentials: true, 
+    
   }));
 app.use(passport.initialize());
 

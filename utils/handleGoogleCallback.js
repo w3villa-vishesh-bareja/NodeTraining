@@ -9,6 +9,10 @@ export const handleGoogleCallback = async (req,res)=>{
         httpOnly: true, 
         secure: false,  
         maxAge: 3600000 // 1 hour
+      }).redirect('http://localhost:5173').json({
+        user:user,
       });
-      res.redirect('http://localhost:5173');
 }
+/**
+ * google login -> auth/google/callback ->
+ */

@@ -52,6 +52,15 @@ export async function genToken(id,name,email){
   }
 }
 
+//for verification email
+export async function genTokenForVerification(email){
+  try{
+    return await jwt.sign({email},process.env.JWT_SECRET_KEY,{expiresIn: '1h'});
+  }catch(err){
+    console.error(`${errorMessages.TokenGenerationError}`,err.message);
+  }
+}
+
 export async function verifyToken(token){
   try{
     const decoded =  await jwt.verify(token,process.env.JWT_SECRET_KEY);

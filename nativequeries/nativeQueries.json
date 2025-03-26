@@ -3,5 +3,9 @@
 
     "createUser": "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
 
-    "createUserWithSocial": "INSERT INTO users (name, email, password, isSocial) VALUES (?, ?, ?, ?)"
+    "createUserWithSocial": "INSERT INTO users (name, email, password, isSocial) VALUES (?, ?, ?, ?)",
+
+    "addSocialUser": "INSERT INTO social_logins (userID, provider, providerId) VALUES (?, ?, ?) ",
+
+    "EmailVerification": "INSERT INTO Verification (token) VALUES (?)"
 }
