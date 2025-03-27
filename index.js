@@ -5,7 +5,7 @@ import passport from 'passport'
 import userRoutes from './routes/userRoute.js'
 import googleRoutes from './routes/googleRoute.js'
 
-
+dotenv.config();
 const app = express();
 app.use(express.json());
 app.use(cors({

@@ -3,7 +3,7 @@
   
   "missingFields": "All fields are required.",
   
-  "userExists": "User already exists.",
+  "userExists": "User already exists. Please Login",
   
   "registrationFailed": "Error during registration. Please try again later.",
   

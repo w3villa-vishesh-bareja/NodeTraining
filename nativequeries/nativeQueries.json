@@ -7,5 +7,12 @@
 
     "addSocialUser": "INSERT INTO social_logins (userID, provider, providerId) VALUES (?, ?, ?) ",
 
-    "EmailVerification": "INSERT INTO Verification (token) VALUES (?)"
+    "EmailVerification": "INSERT INTO Verification (name , email , password , verificationToken ) VALUES (? , ? , ? , ?)",
+
+    "checkFromVerification" : "SELECT id, name, email, password, expires_at, isVerified from Verification WHERE email = ?",
+
+    "updateToken": "UPDATE Verification SET verificationToken = ?, expires_at = (CURRENT_TIMESTAMP + INTERVAL 10 MINUTE) WHERE id = ?",
+
+    "updateVerified": "UPDATE Verification SET isVerified = ?"
+
 }
