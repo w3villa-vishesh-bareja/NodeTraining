@@ -6,7 +6,7 @@ export const verifyJwt = async (req, res, next) => {
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ message: "Unauthorized: Missing or invalid token format" });
   }
-
+  
   try {
     const token = authHeader.split(" ")[1];
 

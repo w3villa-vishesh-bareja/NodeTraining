@@ -7,12 +7,31 @@
 
     "addSocialUser": "INSERT INTO social_logins (userID, provider, providerId) VALUES (?, ?, ?) ",
 
-    "EmailVerification": "INSERT INTO Verification (name , email , password , verificationToken ) VALUES (? , ? , ? , ?)",
+    "EmailVerification": "INSERT INTO verification (name , email , password , verificationToken ) VALUES (? , ? , ? , ?)",
 
-    "checkFromVerification" : "SELECT id, name, email, password, expires_at, isVerified from Verification WHERE email = ?",
+    "checkFromVerification" : "SELECT id, name, email, password, expires_at, isVerified from verification WHERE email = ?",
 
-    "updateToken": "UPDATE Verification SET verificationToken = ?, expires_at = (CURRENT_TIMESTAMP + INTERVAL 10 MINUTE) WHERE id = ?",
+    "updateToken": "UPDATE email_verifications SET verificationToken = ?, expires_at = (CURRENT_TIMESTAMP + INTERVAL 10 MINUTE) WHERE id = ?",
 
-    "updateVerified": "UPDATE Verification SET isVerified = ?"
+    "updateVerified": "UPDATE verification SET isVerified = ?",
 
+    "getSoftUserWithEMail": "SELECT id, name , email, phone_number, password From soft_registrations WHERE email = ?",
+
+    "getSoftUserWithNumber": "SELECT id, name , email, phone_number, password From soft_registrations WHERE phone_number = ?",
+
+    "insertIntoSoftRegister":"INSERT INTO soft_registrations (name , email , phone_number , password) VALUES (?, ?, ?, ?)",
+
+    "checkVerificationStatus": "SELECT o.isVerified FROM soft_registrations AS s JOIN otp_verifications AS o ON o.soft_registration_id = s.id WHERE  s.phone_number = ?",
+
+    "insertInOtp": "INSERT INTO otp_verifications (soft_registration_id , phone_number , otp) VALUES (?, ?, ?)",
+
+    "updateOtp": "UPDATE otp_verifications SET otp = ? WHERE phone_number = ?",
+
+    "getOtp": "SELECT otp FROM otp_verifications WHERE phone_number = ?",
+
+    "verifyUser": "UPDATE otp_verifications SET isVerified = ? WHERE phone_number = ?",
+
+    "deleteFromSoftRegister": "DELETE FROM soft_registrations WHERE phone_number = ? ",
+
+    "insertInUsers": "INSERT INTO users (name , email , phone_number , password) VALUES (?, ?, ?, ?) "
 }

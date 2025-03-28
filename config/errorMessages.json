@@ -21,5 +21,9 @@
   
   "TokenVerificationError": "Error in verifying error",
 
-  "GoogleLoginError" : "Error in google Login"
+  "GoogleLoginError" : "Error in google Login",
+  
+  "selectVerificationMethod" : "Please select a verification method",
+
+  "incorrectVerificationMethod" : "incorrect Verification method"
 }

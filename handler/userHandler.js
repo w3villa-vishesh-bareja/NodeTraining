@@ -8,7 +8,7 @@ export async function updateToken(id, email , connection) {
 
       const token = await genTokenForVerification(email);
       console.log(token);
-      await connection.query(nativeQueries.updateToken, [token, id , Date.now()]);
+      await connection.query(nativeQueries.updateToken, [token, id ]);
       await mailer(email, token);
 
       await connection.commit();
