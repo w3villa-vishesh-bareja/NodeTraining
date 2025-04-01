@@ -4,9 +4,11 @@ export const verifyJwt = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized: Missing or invalid token format" });
+    return res
+      .status(401)
+      .json({ message: "Unauthorized: Missing or invalid token format" });
   }
-  
+
   try {
     const token = authHeader.split(" ")[1];
 
@@ -16,9 +18,11 @@ export const verifyJwt = async (req, res, next) => {
     const decoded = await verifyToken(token);
     console.log(decoded);
     if (!decoded) {
-      return res.status(403).json({ message: "Unauthasdadorized: Invalid token" });
+      return res
+        .status(403)
+        .json({ message: "Unauthasdadorized: Invalid token" });
     }
-    req.user = decoded;
+    req.user = { ...decoded, token };
     console.log("User after decoding:", req.user);
     next();
   } catch (err) {

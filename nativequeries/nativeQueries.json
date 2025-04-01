@@ -1,19 +1,21 @@
 {
-    "getUser" : "SELECT id, name, email FROM users WHERE email = ?",
+    "getUser" : "SELECT id FROM users WHERE email = ?",
 
-    "createUser": "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
+    "createUser": "INSERT INTO users (name, email, password , phone_number,verified_methods) VALUES (?, ?, ?, ?, ?)",
+
+    "updateUserEmail":"UPDATE users SET verified_methods = IF(verified_methods IS NULL, 'EMAIL', CONCAT(verified_methods, ',EMAIL')) WHERE email = ?",
 
     "createUserWithSocial": "INSERT INTO users (name, email, password, isSocial) VALUES (?, ?, ?, ?)",
 
     "addSocialUser": "INSERT INTO social_logins (userID, provider, providerId) VALUES (?, ?, ?) ",
 
-    "EmailVerification": "INSERT INTO verification (name , email , password , verificationToken ) VALUES (? , ? , ? , ?)",
+    "InsertIntoEmailVerification": "INSERT INTO email_verifications (soft_registration_id , verificationToken ) VALUES (? , ?)",
 
-    "checkFromVerification" : "SELECT id, name, email, password, expires_at, isVerified from verification WHERE email = ?",
+    "checkFromVerification" : "SELECT  e.isVerified , e.expires_at  , s.id AS soft_registration_id , s.name , s.email , s.phone_number , s.password FROM email_verifications AS e JOIN soft_registrations AS s ON e.soft_registration_id = s.id WHERE  e.verificationToken = ?",
 
-    "updateToken": "UPDATE email_verifications SET verificationToken = ?, expires_at = (CURRENT_TIMESTAMP + INTERVAL 10 MINUTE) WHERE id = ?",
+    "updateToken": "UPDATE email_verifications SET expires_at = (CURRENT_TIMESTAMP + INTERVAL 10 MINUTE), verificationToken = ? WHERE soft_registration_id = ?",
 
-    "updateVerified": "UPDATE verification SET isVerified = ?",
+    "updateVerified": "UPDATE email_verifications SET isVerified = ? WHERE soft_registration_id = ?",
 
     "getSoftUserWithEMail": "SELECT id, name , email, phone_number, password From soft_registrations WHERE email = ?",
 
@@ -23,6 +25,8 @@
 
     "checkVerificationStatus": "SELECT o.isVerified FROM soft_registrations AS s JOIN otp_verifications AS o ON o.soft_registration_id = s.id WHERE  s.phone_number = ?",
 
+    "checkVerificationStatusForEmail": "SELECT e.isVerified , e.expires_at FROM soft_registrations AS s JOIN email_verifications AS e ON e.soft_registration_id = s.id WHERE  s.email = ?",
+
     "insertInOtp": "INSERT INTO otp_verifications (soft_registration_id , phone_number , otp) VALUES (?, ?, ?)",
 
     "updateOtp": "UPDATE otp_verifications SET otp = ? WHERE phone_number = ?",
@@ -31,7 +35,11 @@
 
     "verifyUser": "UPDATE otp_verifications SET isVerified = ? WHERE phone_number = ?",
 
-    "deleteFromSoftRegister": "DELETE FROM soft_registrations WHERE phone_number = ? ",
+    "deleteFromSoftRegister": "DELETE FROM soft_registrations WHERE phone_number = ? OR email = ? ",
 
-    "insertInUsers": "INSERT INTO users (name , email , phone_number , password) VALUES (?, ?, ?, ?) "
+    "insertInUsers": "INSERT INTO users (name , email , phone_number , password) VALUES (?, ?, ?, ?) ",
+
+    "getVerifiedMethods":"SELECT verified_methods FROM users WHERE email = ? OR phone_number = ?",
+
+    "updateVerifiedMethodsWithOTP": "UPDATE users SET verified_methods = IF(verified_methods IS NULL, 'OTP', CONCAT(verified_methods, ',OTP')) WHERE phone_number = ?"
 }

@@ -8,152 +8,74 @@ import joi from "joi";
 import nativeQueries from "../nativequeries/nativeQueries.json" assert { type: "json" };
 import errorMessages from "../config/errorMessages.json" assert { type: "json" };
 import successMessages from "../config/successMessages.json" assert { type: "json" };
-import { insertIntoVerification, updateToken } from "../handler/userHandler.js";
-import twilio from 'twilio';
+import {
+  decideEmailOperation,
+  decideOtpOperation,
+  insertIntoEmailVerification,
+  updateToken,
+} from "../handler/userHandler.js";
+import twilio from "twilio";
 
 const userSchema = joi.object({
   name: joi.string().min(3).required(),
   email: joi.string().email().required(),
   password: joi.string().min(6).required(),
   phoneNumber: joi.string().required(),
-  verificationMethod: joi.string().required()
+  verificationMethod: joi.string().required(),
 });
 
 const client = twilio(process.env.ACCOUNT_SID, process.env.AUTH_TOKEN);
-// const client = twilio("AC59cc0cb55f5c625729edf0278410a7a", "094396964fd461f033473de6c59c16dc");
 
 export const register = async (req, res) => {
-
-  // const connection = await pool.getConnection();
-  // await connection.beginTransaction();
-
   const { error } = userSchema.validate(req.body);
   if (error) {
     return res
       .status(400)
       .json({ message: errorMessages.validationError, error: error.message });
   }
-  const { name, email, password, phoneNumber, verificationMethod} = req.body;
-
+  const { name, email, password, phoneNumber, verificationMethod } = req.body;
 
   if (!name || !email || !password || !phoneNumber) {
     return res.status(400).json({ message: errorMessages.missingFields });
   }
 
-  if(!verificationMethod){
-    return res.status(400).json({ message: errorMessages.selectVerificationMethod });
-  }else if (verificationMethod != "EMAIL" && verificationMethod != "OTP"){
-    return res.status(400).json({ message: errorMessages.incorrectVerificationMethod });
+  if (!verificationMethod) {
+    return res
+      .status(400)
+      .json({ message: errorMessages.selectVerificationMethod });
+  } else if (verificationMethod != "EMAIL" && verificationMethod != "OTP") {
+    return res
+      .status(400)
+      .json({ message: errorMessages.incorrectVerificationMethod });
   }
-  
+
   try {
-  const hashedPassword = await hash(password);
-
-  if(verificationMethod == "OTP"){
-
-    const [numberResult] = await pool.query(nativeQueries.getSoftUserWithNumber, [phoneNumber]) 
-    console.log(numberResult[0]);
-    if(numberResult.length > 0){
-     const [isVerifiedResult] = await pool.query(nativeQueries.checkVerificationStatus,[ phoneNumber])
-      console.log(isVerifiedResult);
-     //if the user is found in soft_register but is not in otp , it means they started verification with email but did not complete it
-     // so and trigger /send otp 
-     if(!isVerifiedResult.length>0){
-      //insert in otp
-      console.log("inserted")
-      return res.status(307).json({ id: numberResult[0].id , number:numberResult[0].phone_number , Action:"INSERT"});
-     }
-     if(isVerifiedResult[0].isVerified==0){
-      //trigger send otp it will handle resending otp
-      return res.status(307).json({ number:numberResult[0].phone_number , Action : "UPDATE" });
-     }
-     if(isVerifiedResult[0].isVerified==1){
-      //delete record from soft_register write function in handler
-     }
-    }else{
-      await pool.query(nativeQueries.insertIntoSoftRegister,[name , email , phoneNumber , hashedPassword ]);
-      const [numberResult] = await pool.query(nativeQueries.getSoftUserWithNumber, [phoneNumber]) 
-      return res.status(307).json({ id: numberResult[0].id , number:numberResult[0].phone_number , Action:"INSERT"});
+    const [result] = await pool.query(nativeQueries.getUser, [email]);
+    if (result.length > 0) {
+      return res
+        .status(409)
+        .json({ message: "user with this email already exists" });
+    }
+    const hashedPassword = await hash(password);
+    if (verificationMethod == "OTP") {
+      const typeOfOperation = await decideOtpOperation(
+        phoneNumber,
+        name,
+        email,
+        hashedPassword
+      );
+      return res.status(307).json({ data: typeOfOperation });
     }
 
-  }
-
-  if(verificationMethod == "EMAIL"){
-    const [emailResult] = await pool.query(nativeQueries.getSoftUserWithEMail, [email]) 
-    if(emailResult.length > 0){
-      const [isVerifiedResult] = await pool.query(nativeQueries.getSoftUserWithEMail , [email]);
-
-      if(!isVerifiedResult.length>0){
-        const token = await genTokenForVerification(email);
-        return res.status(307).json({ id: numberResult[0].id , token: token, Action:"INSERT"});
-      }
-      if(isVerifiedResult[0].isVerified==0){
-        if(new Date(isVerifiedResult[0].expires_at) > new Date(Date.now())){
-          return res
-          .status(409)
-          .json({
-            message: "Please Verify the email by clicking the link in the mail",
-          });
-        }
-        if(new Date(user.expires_at) < new Date(Date.now())){
-          const connection = await pool.getConnection();
-          await updateToken(isVerifiedResult[0].id, isVerifiedResult[0].email, connection);
-        }
-        return res.status(307).json({ id:emailResult[0].id, token:token,  Action : "UPDATE" });
-      }
+    if (verificationMethod == "EMAIL") {
+      const typeOfOperation = await decideEmailOperation(
+        name,
+        email,
+        phoneNumber,
+        hashedPassword
+      );
+      return res.status(307).json({ data: typeOfOperation });
     }
-    return res.status(307).json({redirectURL : "http://locahost:5173/verifyEmail" , user:{
-      name:name,
-      email:email,
-      number:phoneNumber,
-      password:hashedPassword
-    }});
-  }
-    // do i send the details of user in this query ? 
-  
-    // const [existingUsers] = await pool.query(nativeQueries.getUser, [email]);
-
-    // if (existingUsers.length > 0) {
-    //   return res
-    //     .status(409)
-    //     .json({ message: errorMessages.userExists, user: existingUsers[0] });
-    // }
-
-    // const [verificationUser] = await pool.query(
-    //   nativeQueries.checkFromVerification,
-    //   [email]
-    // );
-
-    // console.log(verificationUser[0]);
-
-    // if (verificationUser.length > 0) {
-    //   const user = verificationUser[0];
-    //   if (user.isVerified == true) {
-    //     return res.status(409).json({ message: errorMessages.userExists }); // if isVerified is true user must be present in users table
-    //   } else if (
-    //     user.isVerified == false &&
-    //     new Date(user.expires_at) > new Date(Date.now())
-    //   ) {
-    //     return res
-    //       .status(409)
-    //       .json({
-    //         message: "Please Verify the email by clicking the link in the mail",
-    //       });
-    //   } else if (
-    //     user.isVerified == false &&
-    //     new Date(user.expires_at) < new Date(Date.now())
-    //   ) {
-    //     console.log(new Date(user.expires_at), new Date(Date.now()));
-    //     //to be made into a function
-    //     await updateToken(user.id, user.email, connection);
-    //     return res.status(200).json({
-    //       message: "New Verification email has been sent please verify.",
-    //     });
-    //   }
-    // }
-
-    // await insertIntoVerification(name, email, hashedPassword);
-    // await connection.commit();
     return res.status(201).json({ message: successMessages.userRegistered });
   } catch (error) {
     // await connection.rollback()
@@ -204,147 +126,301 @@ export const login = async (req, res) => {
   }
 };
 
-export const verifyEmail = async (req,res)=>{
-  const {email} = req.user;
-  
+export const sendEmail = async (req, res) => {
   const connection = await pool.getConnection();
-  try{
-  
+  const { id, Action } = req.body;
+  const { email, token } = req.user;
+  const verificationToken = token;
+
+  if (!Action || !["INSERT", "UPDATE"].includes(Action)) {
+    return res
+      .status(400)
+      .json({
+        message: 'Invalid action. Must be either "INSERT" or "UPDATE".',
+      });
+  }
+
+  if (!id && !verificationToken) {
+    return res
+      .status(404)
+      .json({ message: "id and verification token is needed" });
+  }
+
+  try {
+    if (Action == "INSERT") {
+      insertIntoEmailVerification(id, verificationToken, email, connection);
+      return res.status(200).json({ message: "email sent" });
+    }
+    if (Action == "UPDATE") {
+      updateToken(id, verificationToken, email, connection);
+      return res.status(200).json({ message: "email sent" });
+    }
+  } catch (error) {
+    console.error(err);
+    return res
+      .status(500)
+      .json({ message: "Internal server error", error: err.message });
+  }
+};
+export const verifyEmail = async (req, res) => {
+  const { email, token } = req.user;
+  const verificationToken = token;
+  const { registrationSource } = req.body;
+
+  if (!registrationSource) {
+    return res
+      .status(400)
+      .json({ message: "registeration source is required" });
+  }
+  if (registrationSource != "REGISTER" && registrationSource != "EXISTING") {
+    return res.status(400).json({ message: "invalid registeration source" });
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    console.log(verificationToken);
     //fetch expiri date , isVerified from db using token
-    const [result] = await pool.query(nativeQueries.checkFromVerification,[email]);
+    const [result] = await pool.query(nativeQueries.checkFromVerification, [
+      verificationToken,
+    ]);
+    console.log(result);
     const user = result[0];
     if (user.isVerified == 1) {
+      // await connection.query(nativeQueries.deleteFromSoftRegister,[null,email]);
       return res.status(409).json({ message: errorMessages.userExists }); // if isVerified is true user must be present in users table
     } else if (
       user.isVerified == 0 &&
       new Date(user.expires_at) > new Date(Date.now())
     ) {
-
-
-      await connection.beginTransaction()
-      await connection.query(nativeQueries.createUser,[user.name , user.email , user.password]); // insert in user table
-      await connection.query(nativeQueries.updateVerified,[true]);//update isVerified field
+      await connection.beginTransaction();
+      if (registrationSource == "REGISTER") {
+        await connection.query(nativeQueries.createUser, [
+          user.name,
+          user.email,
+          user.password,
+          user.phone_number,
+          "EMAIL",
+        ]);
+        await connection.query(nativeQueries.updateVerified, [
+          true,
+          user.soft_registration_id,
+        ]);
+      } else if (registrationSource == "EXISTING") {
+        await connection.query(nativeQueries.updateUserEmail, [email]); // update user name adds the email verification status in user table
+        await connection.query(nativeQueries.updateVerified, [
+          true,
+          user.soft_registration_id,
+        ]);
+        const [userStatus] = await connection.query(
+          nativeQueries.getVerifiedMethods,
+          [email, phone_number]
+        );
+        if (
+          userStatus.length > 0 &&
+          userStatus[0].verified_methods.includes("EMAIL") &&
+          userStatus[0].verified_methods.includes("OTP")
+        ) {
+          await connection.query(nativeQueries.deleteFromSoftRegister, [
+            null,
+            email,
+          ]);
+        }
+      }
       await connection.commit();
       await connection.release();
-      return res.status(200).json({message : "email verified"});
-
-
+      return res.status(200).json({ message: "email verified" });
     } else if (
       user.isVerified == false &&
       new Date(user.expires_at) < new Date(Date.now())
     ) {
       console.log(new Date(user.expires_at), new Date(Date.now()));
-      await updateToken(user.id, user.email, connection);
+      const token = await genTokenForVerification(email);
+      await updateToken(
+        user.soft_registration_id,
+        token,
+        user.email,
+        connection
+      );
       return res.status(200).json({
         message: "New Verification email has been sent please verify.",
       });
     }
-  }catch(err){
-    (await connection).rollback;
-    (await connection).release;
-    return res.status(500).send({message:errorMessages.internalServerError ,Error: err.message})
+  } catch (err) {
+    await connection.rollback();
+    await connection.release();
+    console.error(err);
+    return res
+      .status(500)
+      .send({ message: errorMessages.internalServerError, Error: err.message });
   }
-  
+};
 
-}
-
-export const sendOTP = async (req,res)=>{
-  const connection =await pool.getConnection();
+export const sendOTP = async (req, res) => {
+  const connection = await pool.getConnection();
   await connection.beginTransaction();
 
-  const { id , number , Action } = req.body;
-  
-  if(!number){
-    return res.status(400).json({errorMessages :"please provide a number"});
+  const { id, number, registrationSource } = req.body;
+  let { Action } = req.body;
+
+  if (!registrationSource) {
+    return res
+      .status(400)
+      .json({ errorMessages: "please provide a registrationSource" });
   }
-   try{
-    let digits = '0123456789';
-    let OTP ="";
+  if (registrationSource == "REGISTER" && !Action) {
+    return res.status(400).json({ errorMessages: "please provide a Action" });
+  }
+  if (!number) {
+    return res.status(400).json({ errorMessages: "please provide a number" });
+  }
+  try {
+    let digits = "0123456789";
+    let OTP = "";
 
     for (let index = 0; index < 4; index++) {
-      OTP+= digits[Math.floor(Math.random()*10)];
+      OTP += digits[Math.floor(Math.random() * 10)];
     }
-    if(Action == "INSERT"){
-      await connection.query(nativeQueries.insertInOtp, [id, number , OTP]);
+
+    if (registrationSource === "EXISTING") {
+      const typeOfOperation = await decideOtpOperation(number);
+      Action = typeOfOperation.Action;
     }
-    if(Action == "UPDATE"){
-      await connection.query(nativeQueries.updateOtp, [OTP , number]);
+
+    if (Action == "INSERT") {
+      await connection.query(nativeQueries.insertInOtp, [id, number, OTP]);
     }
-    await client.messages.create({
-      body: `Verification OTP for (This is a test) ${OTP}`,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: number
-    })
-    .then(async () => {
-      await connection.commit();
-      await connection.release(); 
-      res.status(200).json({ message: "Message sent" , data :{ phoneNumber : number}})})
-    .catch((error) => {
-      console.error("Error sending message:", error);
-      res.status(500).json({ error: error.message });
-    });
+    if (Action == "UPDATE") {
+      await connection.query(nativeQueries.updateOtp, [OTP, number]);
+    }
+    await client.messages
+      .create({
+        body: `Verification OTP for (This is a test) ${OTP}`,
+        from: process.env.TWILIO_PHONE_NUMBER,
+        to: number,
+      })
+      .then(async () => {
+        await connection.commit();
+        await connection.release();
+        res
+          .status(200)
+          .json({ message: "Message sent", data: { phoneNumber: number } });
+      })
+      .catch((error) => {
+        console.error("Error sending message:", error);
+        res.status(500).json({ error: error.message });
+      });
 
     console.log(OTP);
-
-  }catch(err){
-      await connection.rollback();
-      connection.release();
-      res.status(500).json({message: errorMessages.internalServerError ,Error: err.message});
-   }
-}
+  } catch (err) {
+    await connection.rollback();
+    connection.release();
+    res
+      .status(500)
+      .json({ message: errorMessages.internalServerError, Error: err.message });
+  }
+};
 
 export const verifyOTP = async (req, res) => {
   const connection = await pool.getConnection();
-  await connection.beginTransaction();
-  const { phone_number, otp } = req.body;
+  const { phone_number, otp, registrationSource } = req.body;
+
+  // Validate registrationSource
+  if (!registrationSource) {
+    return res.status(400).json({ message: "Registration source is required" });
+  }
+
+  if (registrationSource !== "REGISTER" && registrationSource !== "EXISTING") {
+    return res.status(400).json({ message: "Invalid registration source" });
+  }
 
   try {
-    // Correct use of connection.query
-    const [result] = await connection.query(nativeQueries.getOtp, [phone_number]);
-    
+    // Begin transaction
+    await connection.beginTransaction();
+
+    // Fetch OTP from the database for the given phone number
+    const [result] = await connection.query(nativeQueries.getOtp, [
+      phone_number,
+    ]);
+
     if (!result || result.length === 0) {
       await connection.rollback();
       connection.release();
-      return res.status(404).json({ message: "User not found, make sure OTP has been sent before you try to verify" });
+      return res
+        .status(404)
+        .json({
+          message:
+            "User not found, make sure OTP has been sent before you try to verify",
+        });
     }
-    
+
     const OTP = result[0].otp;
 
-    if (otp == OTP) {
-      // Mark the user as verified
-      await connection.query(nativeQueries.verifyUser, [true, phone_number]);
-
-      // Fetch user details
-      const [userResult] = await connection.query(nativeQueries.getSoftUserWithNumber, [phone_number]);
+    // Check if OTP matches
+    if (otp === OTP) {
+      // Fetch user details from soft registrations
+      const [userResult] = await connection.query(
+        nativeQueries.getSoftUserWithNumber,
+        [phone_number]
+      );
 
       if (!userResult || userResult.length === 0) {
-        throw new Error("User data not found in soft registrations.");
+        return res
+          .status(400)
+          .json({ message: "User not found in soft registrations" });
       }
 
-      // Insert into users table
-      await connection.query(nativeQueries.insertInUsers, [
-        userResult[0].name,
-        userResult[0].email,
-        userResult[0].phone_number,
-        userResult[0].password
-      ]);
+      // Handle registration based on the source
+      if (registrationSource === "REGISTER") {
+        await connection.query(nativeQueries.createUser, [
+          userResult[0].name,
+          userResult[0].email,
+          userResult[0].phone_number,
+          userResult[0].password,
+          "OTP",
+        ]);
+        await connection.query(nativeQueries.updateVerified, [
+          true,
+          userResult[0].id,
+        ]); // Mark user as verified
+      }
 
-      // Delete from soft registrations
-      await connection.query(nativeQueries.deleteFromSoftRegister, [phone_number]);
+      if (registrationSource === "EXISTING") {
+        await connection.query(nativeQueries.updateVerifiedMethodsWithOTP, [
+          phone_number,
+        ]);
 
+        // Ensure email is also included to handle correct checking
+        const [userStatus] = await connection.query(
+          nativeQueries.getVerifiedMethods,
+          [null, phone_number]
+        );
+
+        if (
+          userStatus.length > 0 &&
+          userStatus[0].verified_methods.includes("EMAIL") &&
+          userStatus[0].verified_methods.includes("OTP")
+        ) {
+          // Delete from soft registrations only if both methods are verified
+          await connection.query(nativeQueries.deleteFromSoftRegister, [
+            phone_number,
+            userStatus[0].email,
+          ]);
+        }
+      }
+
+      // Commit the transaction
       await connection.commit();
       connection.release();
 
       return res.status(200).json({ message: "Verified" });
+    } else {
+      // If OTP doesn't match, rollback and return error
+      await connection.rollback();
+      connection.release();
+      return res.status(400).json({ message: "Wrong OTP" });
     }
-
-    // If OTP doesn't match
-    await connection.rollback();
-    connection.release();
-    return res.status(400).json({ message: "Wrong OTP" });
-
   } catch (err) {
-    // Error handling
+    // Rollback and release in case of any error
     await connection.rollback();
     connection.release();
     console.error("Error during OTP verification:", err);
