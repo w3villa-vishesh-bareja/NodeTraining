@@ -5,7 +5,7 @@
 
     "updateUserEmail":"UPDATE users SET verified_methods = IF(verified_methods IS NULL, 'EMAIL', CONCAT(verified_methods, ',EMAIL')) WHERE email = ?",
 
-    "createUserWithSocial": "INSERT INTO users (name, email, password, isSocial) VALUES (?, ?, ?, ?)",
+    "createUserWithSocial": "INSERT INTO users (name, email, password, verified_methods, isSocial) VALUES (?, ?, ?, ?, ?)",
 
     "addSocialUser": "INSERT INTO social_logins (userID, provider, providerId) VALUES (?, ?, ?) ",
 

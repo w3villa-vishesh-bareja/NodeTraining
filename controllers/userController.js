@@ -15,6 +15,10 @@ import {
   updateToken,
 } from "../handler/userHandler.js";
 import twilio from "twilio";
+// import bunyan from "bunyan";
+import { ApiError } from "../utils/ApiError.js";
+import logger from "../logger/index.js";
+// const logger = bunyan.createLogger({ name: "authService" });
 
 const userSchema = joi.object({
   name: joi.string().min(3).required(),
@@ -26,64 +30,46 @@ const userSchema = joi.object({
 
 const client = twilio(process.env.ACCOUNT_SID, process.env.AUTH_TOKEN);
 
-export const register = async (req, res) => {
+export const register = async (req, res, next) => {
   const { error } = userSchema.validate(req.body);
   if (error) {
-    return res
-      .status(400)
-      .json({ message: errorMessages.validationError, error: error.message });
+    logger.warn({ message: "Validation error during registration", validationError: error.message });
+    return next(new ApiError(400, errorMessages.validationError, [error.message]));
   }
+
   const { name, email, password, phoneNumber, verificationMethod } = req.body;
-
-  if (!name || !email || !password || !phoneNumber) {
-    return res.status(400).json({ message: errorMessages.missingFields });
-  }
-
-  if (!verificationMethod) {
-    return res
-      .status(400)
-      .json({ message: errorMessages.selectVerificationMethod });
-  } else if (verificationMethod != "EMAIL" && verificationMethod != "OTP") {
-    return res
-      .status(400)
-      .json({ message: errorMessages.incorrectVerificationMethod });
-  }
 
   try {
     const [result] = await pool.query(nativeQueries.getUser, [email]);
     if (result.length > 0) {
-      return res
-        .status(409)
-        .json({ message: "user with this email already exists" });
+      logger.warn({ message: "Registration failed: User already exists", email });
+      return next(new ApiError(409, errorMessages.userExists));
     }
+
     const hashedPassword = await hash(password);
-    if (verificationMethod == "OTP") {
-      const typeOfOperation = await decideOtpOperation(
-        phoneNumber,
-        name,
-        email,
-        hashedPassword
-      );
+
+    if (verificationMethod === "OTP") {
+      const typeOfOperation = await decideOtpOperation(phoneNumber, name, email, hashedPassword);
+      logger.info({ message: "OTP verification initiated for user registration", email, phoneNumber });
       return res.status(307).json({ data: typeOfOperation });
     }
 
-    if (verificationMethod == "EMAIL") {
-      const typeOfOperation = await decideEmailOperation(
-        name,
-        email,
-        phoneNumber,
-        hashedPassword
-      );
+    if (verificationMethod === "EMAIL") {
+      const typeOfOperation = await decideEmailOperation(name, email, phoneNumber, hashedPassword);
+      logger.info({ message: "Email verification initiated for user registration", email });
       return res.status(307).json({ data: typeOfOperation });
     }
+
+    logger.info({ message: "User successfully registered without verification", email });
     return res.status(201).json({ message: successMessages.userRegistered });
+
   } catch (error) {
-    // await connection.rollback()
-    // connection.release();
-    console.error(`${errorMessages.registrationFailed}`, error);
-    return res.status(500).json({ message: errorMessages.internalServerError });
+    logger.error({ message: "Registration failed due to an internal error", error: error.message, stack: error.stack });
+    return next(new ApiError(502, "Bad Gateway: Service Unavailable", [error.message]));
   }
 };
+
+  
 
 export const login = async (req, res) => {
   const { email, password } = req.body;
@@ -96,18 +82,22 @@ export const login = async (req, res) => {
     const [users] = await pool.query(nativeQueries.getUser, [email]);
 
     if (users.length === 0) {
-      return res
-        .status(401)
-        .json({ message: errorMessages.invalidCredentials });
+      // return res
+      //   .status(401)
+      //   .json({ message: errorMessages.invalidCredentials });
+
+      return next(new ApiError(401,errorMessages.invalidCredentials))
     }
 
     const user = users[0];
     const isValid = await compare(password, user.password);
 
     if (!isValid) {
-      return res
-        .status(401)
-        .json({ message: errorMessages.invalidCredentials });
+      // return res
+      //   .status(401)
+      //   .json({ message: errorMessages.invalidCredentials });
+      return next(new ApiError(401,errorMessages.invalidCredentials))
+
     }
     const token = await genToken(user.id, user.name, user.email);
     res.cookie("token2", token);
@@ -122,7 +112,7 @@ export const login = async (req, res) => {
     });
   } catch (error) {
     console.error(`${errorMessages.loginFailed}`, error.message);
-    return res.status(500).json({ message: errorMessages.internalServerError });
+    return next(new ApiError(500 , errorMessages.internalServerError , [error]));
   }
 };
 
@@ -133,17 +123,19 @@ export const sendEmail = async (req, res) => {
   const verificationToken = token;
 
   if (!Action || !["INSERT", "UPDATE"].includes(Action)) {
-    return res
-      .status(400)
-      .json({
-        message: 'Invalid action. Must be either "INSERT" or "UPDATE".',
-      });
+    // return res
+    //   .status(400)
+    //   .json({
+    //     message: 'Invalid action. Must be either "INSERT" or "UPDATE".',
+    //   });
+    return next(new ApiError(400,errorMessages.invalidAction))
   }
 
   if (!id && !verificationToken) {
-    return res
-      .status(404)
-      .json({ message: "id and verification token is needed" });
+    // return res
+    //   .status(404)
+    //   .json({ message: "Id and verification token is needed" });
+    return next(new ApiError(404 , errorMessages.missingFields + "Id or verificationToken"))
   }
 
   try {
@@ -157,9 +149,8 @@ export const sendEmail = async (req, res) => {
     }
   } catch (error) {
     console.error(err);
-    return res
-      .status(500)
-      .json({ message: "Internal server error", error: err.message });
+    return next(new ApiError(500 , errorMessages.internalServerError , [error]));
+
   }
 };
 export const verifyEmail = async (req, res) => {
@@ -168,12 +159,15 @@ export const verifyEmail = async (req, res) => {
   const { registrationSource } = req.body;
 
   if (!registrationSource) {
-    return res
-      .status(400)
-      .json({ message: "registeration source is required" });
+    // return res
+    //   .status(400)
+    //   .json({ message: "Registeration source is required" });
+
+    return next(new ApiError(400,errorMessages.registerationSourceMissing));
   }
   if (registrationSource != "REGISTER" && registrationSource != "EXISTING") {
-    return res.status(400).json({ message: "invalid registeration source" });
+    // return res.status(400).json({ message: "invalid registeration source" });
+    return next(new ApiError(400, errorMessages.invalidRegistrationSource));
   }
 
   const connection = await pool.getConnection();
@@ -187,7 +181,8 @@ export const verifyEmail = async (req, res) => {
     const user = result[0];
     if (user.isVerified == 1) {
       // await connection.query(nativeQueries.deleteFromSoftRegister,[null,email]);
-      return res.status(409).json({ message: errorMessages.userExists }); // if isVerified is true user must be present in users table
+      // return res.status(409).json({ message: errorMessages.userExists }); // if isVerified is true user must be present in users table
+      next(new ApiError(409,errorMessages.userExists))
     } else if (
       user.isVerified == 0 &&
       new Date(user.expires_at) > new Date(Date.now())
@@ -249,9 +244,11 @@ export const verifyEmail = async (req, res) => {
     await connection.rollback();
     await connection.release();
     console.error(err);
-    return res
-      .status(500)
-      .send({ message: errorMessages.internalServerError, Error: err.message });
+    // return res
+    //   .status(500)
+    //   .send({ message: errorMessages.internalServerError, Error: err.message });
+    return next(new ApiError(500 , errorMessages.internalServerError , [error]));
+
   }
 };
 
@@ -263,15 +260,20 @@ export const sendOTP = async (req, res) => {
   let { Action } = req.body;
 
   if (!registrationSource) {
-    return res
-      .status(400)
-      .json({ errorMessages: "please provide a registrationSource" });
+    // return res
+    //   .status(400)
+    //   .json({ errorMessages: "please provide a registrationSource" });
+    next(new ApiError(400, errorMessages.registerationSourceMissing))
   }
   if (registrationSource == "REGISTER" && !Action) {
-    return res.status(400).json({ errorMessages: "please provide a Action" });
+    // return res.status(400).json({ errorMessages: "please provide a Action" });
+    next(new ApiError(400, errorMessages.actionMissing))
+
   }
   if (!number) {
-    return res.status(400).json({ errorMessages: "please provide a number" });
+    // return res.status(400).json({ errorMessages: "please provide a number" });
+
+    next(new ApiError(400,errorMessages.missingFields + "phone number"))
   }
   try {
     let digits = "0123456789";
@@ -307,16 +309,20 @@ export const sendOTP = async (req, res) => {
       })
       .catch((error) => {
         console.error("Error sending message:", error);
-        res.status(500).json({ error: error.message });
+        // res.status(500).json({ error: error.message });
+        return next(new ApiError(500 , errorMessages.internalServerError , [error]));
+
       });
 
     console.log(OTP);
   } catch (err) {
     await connection.rollback();
     connection.release();
-    res
-      .status(500)
-      .json({ message: errorMessages.internalServerError, Error: err.message });
+    // res
+    //   .status(500)
+    //   .json({ message: errorMessages.internalServerError, Error: err.message });
+    return next(new ApiError(500 , errorMessages.internalServerError , [error]));
+
   }
 };
 
@@ -326,11 +332,13 @@ export const verifyOTP = async (req, res) => {
 
   // Validate registrationSource
   if (!registrationSource) {
-    return res.status(400).json({ message: "Registration source is required" });
+    // return res.status(400).json({ message: "Registration source is required" });
+    return next(new ApiError(400 , errorMessages.registerationSourceMissing));
   }
 
   if (registrationSource !== "REGISTER" && registrationSource !== "EXISTING") {
-    return res.status(400).json({ message: "Invalid registration source" });
+    // return res.status(400).json({ message: "Invalid registration source" });
+    return next(new ApiError(400 , errorMessages.invalidRegistrationSource));
   }
 
   try {
@@ -345,12 +353,14 @@ export const verifyOTP = async (req, res) => {
     if (!result || result.length === 0) {
       await connection.rollback();
       connection.release();
-      return res
-        .status(404)
-        .json({
-          message:
-            "User not found, make sure OTP has been sent before you try to verify",
-        });
+      // return res
+      //   .status(404)
+      //   .json({
+      //     message:
+      //       "User not found, make sure OTP has been sent before you try to verify",
+      //   });
+    return next(new ApiError(400 ,"User not found, make sure OTP has been sent before you try to verify"))
+
     }
 
     const OTP = result[0].otp;
@@ -364,9 +374,11 @@ export const verifyOTP = async (req, res) => {
       );
 
       if (!userResult || userResult.length === 0) {
-        return res
-          .status(400)
-          .json({ message: "User not found in soft registrations" });
+        // return res
+        //   .status(400)
+        //   .json({ message: "User not found in soft registrations" });
+        return next(new ApiError(400 ,"User not found in soft registrations"))
+
       }
 
       // Handle registration based on the source
@@ -417,13 +429,16 @@ export const verifyOTP = async (req, res) => {
       // If OTP doesn't match, rollback and return error
       await connection.rollback();
       connection.release();
-      return res.status(400).json({ message: "Wrong OTP" });
+      // return res.status(400).json({ message: "Wrong OTP" });
+      return next(new ApiError(400 ,errorMessages.wrongOTP))
+
     }
   } catch (err) {
     // Rollback and release in case of any error
     await connection.rollback();
     connection.release();
     console.error("Error during OTP verification:", err);
-    return res.status(500).json({ message: "Internal Server Error" });
+    // return res.status(500).json({ message: "Internal Server Error" });
+    return next(new ApiError(500 , errorMessages.internalServerError , [error]));
   }
 };

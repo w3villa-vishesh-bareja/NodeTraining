@@ -1,0 +1,7 @@
+{"level":"warn","message":{"email":"vepeham116@oronny.com"},"service":"user-service"}
+{"level":"warn","message":{"email":"vepeham116@oronny.com"},"service":"user-service"}
+{"email":"vepeham116@oronny.com","level":"warn","message":"User with this email already exists","service":"user-service"}
+{"email":"vepeham116@oronny.com","level":"warn","message":"User with this email already exists","service":"user-service","timestamp":"2025-04-02T10:04:18.814Z"}
+{"email":"vepeham116@oronny.com","level":"warn","message":"User with this email already exists","service":"user-service","timestamp":"15:35:03"}
+{"level":"warn","message":{"email":"vepeham116@oronny.com"},"service":"user-service","timestamp":"15:40:40"}
+{"email":"vepeham116@oronny.com","level":"warn","message":"Registration failed: User already exists","service":"user-service","timestamp":"15:42:28"}

@@ -17,20 +17,20 @@ export async function findOrCreateUser(profile) {
         const hashedPassword = await hash(randomPassword);
         console.log(hashedPassword);
 
-        //creating user with isSocial = 1
+        //cr$2b$10$8h9c5irtIOOZ8SnSWQDhR.Y.udC2/TX6hm3665lHnpDwk0DLyKbUWeating user with isSocial = 1
         console.log("creating user");
         await pool.query(nativeQueries.createUserWithSocial, [
           profile.displayName,
           profile.emails[0].value,
           hashedPassword,
+          'EMAIL',
           1,
         ]);
-        console.log("getting user");
         //Fetching the same user for furthur use
         result = await pool.query(nativeQueries.getUser, [
           profile.emails[0].value,
         ]);
-        console.log("adding user to social");
+        console.log("adding user to soawaicial");
         await pool.query(nativeQueries.addSocialUser, [
           result[0].id,
           "Google",

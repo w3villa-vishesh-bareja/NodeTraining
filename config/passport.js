@@ -25,7 +25,7 @@ passport.use(new GoogleStrategy({
 const opts = {
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
     secretOrKey: process.env.JWT_SECRET_KEY,
-  };
+  }; 
   
   passport.use(new JwtStrategy(opts, async (jwt_payload, done) => {
     try {

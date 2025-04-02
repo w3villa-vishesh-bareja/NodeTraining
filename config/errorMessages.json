@@ -1,7 +1,7 @@
 {
   "validationError": "Validation failed. Please check your input.",
   
-  "missingFields": "All fields are required.",
+  "missingFields": "Some fields are missing",
   
   "userExists": "User already exists. Please Login",
   
@@ -25,5 +25,15 @@
   
   "selectVerificationMethod" : "Please select a verification method",
 
-  "incorrectVerificationMethod" : "incorrect Verification method"
+  "incorrectVerificationMethod" : "incorrect Verification method",
+
+  "actionMissing": "Action is missing",
+
+  "invalidAction": "Invalid action. Must be either 'INSERT' or 'UPDATE'",
+
+  "registerationSourceMissing": "Registeration source is required",
+
+  "invalidRegistrationSource": "Invlaid Registeration source . Must be either 'Register' or 'EXISTING' ",
+
+  "wrongOTP": "wrong OTP . Please make sure you enter a valid otp "
 }

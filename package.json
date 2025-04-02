@@ -6,12 +6,13 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon index.js"
+    "start": "NODE_ENV=development nodemon index.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^5.1.1",
+    "bunyan": "^1.8.15",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
@@ -23,7 +24,8 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
-    "twilio": "^5.5.1"
+    "twilio": "^5.5.1",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "autocannon": "^8.0.0"
