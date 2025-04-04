@@ -65,11 +65,11 @@ export const register = async (req, res, next) => {
 
   } catch (error) {
     logger.error({ message: "Registration failed due to an internal error", error: error.message, stack: error.stack });
-    return next(new ApiError(502, "Bad Gateway: Service Unavailable", [error.message]));
+    return next(new ApiError(500, errorMessages.internalServerError, [error.message]));
   }
 };
 
-  
+
 
 export const login = async (req, res) => {
   const { email, password } = req.body;

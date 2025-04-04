@@ -1,6 +1,10 @@
 {
     "userRegistered": "User registered successfully.",
     
-    "loginSuccessful": "Login successful."
+    "loginSuccessful": "Login successful.",
+
+    "emailSent": "Email sent",
+
+    "emailVerified": "Email verified"
     
 }

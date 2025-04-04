@@ -6,6 +6,7 @@ import userRoutes from './routes/userRoute.js'
 import googleRoutes from './routes/googleRoute.js'
 import errorHandler from './middleware/errorHandlingMiddlewre.js'
 import logger from './logger/index.js'
+import responseMiddleware from './middleware/apiMiddleware.js'
 dotenv.config();
 const app = express();
 app.use(express.json());
@@ -20,7 +21,9 @@ app.use(passport.initialize());
 app.use('/user',userRoutes);
 app.use('/',googleRoutes);
 
+app.use(responseMiddleware);
 app.use(errorHandler);
+
 
 const port = process.env.PORT||5000;
 app.listen(port , ()=>{

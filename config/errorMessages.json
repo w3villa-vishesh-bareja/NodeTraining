@@ -35,5 +35,8 @@
 
   "invalidRegistrationSource": "Invlaid Registeration source . Must be either 'Register' or 'EXISTING' ",
 
-  "wrongOTP": "wrong OTP . Please make sure you enter a valid otp "
+  "wrongOTP": "wrong OTP . Please make sure you enter a valid otp ",
+
+  "expiredLink": "Verification link expired. A new verification email has been sent."
+
 }

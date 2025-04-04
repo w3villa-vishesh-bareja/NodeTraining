@@ -10,9 +10,9 @@ export async function updateToken(id, verificationToken, email, connection) {
     console.log(verificationToken);
     await connection.query(nativeQueries.updateToken, [verificationToken, id]);
     await mailer(email, verificationToken);
-
     await connection.commit();
     await connection.release();
+    
   } catch (err) {
     await connection.rollback();
     console.log(err);
