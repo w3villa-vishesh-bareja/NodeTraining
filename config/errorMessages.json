@@ -37,6 +37,9 @@
 
   "wrongOTP": "wrong OTP . Please make sure you enter a valid otp ",
 
-  "expiredLink": "Verification link expired. A new verification email has been sent."
+  "expiredLink": "Verification link expired. A new verification email has been sent.",
 
+  "expiredOtp": "Verification otp expired. please resend otp",
+  
+  "nameExists" : "This username alredy exists"
 }

@@ -5,6 +5,12 @@
 
     "emailSent": "Email sent",
 
-    "emailVerified": "Email verified"
+    "emailVerified": "Email verified",
+
+    "otpSent": "OTP Sent",
+
+    "otpVerified":"OTP verified",
+
+    "profileCreated": "Profile created"
     
 }

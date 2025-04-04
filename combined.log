@@ -6,3 +6,4 @@
 {"level":"warn","message":{"email":"vepeham116@oronny.com"},"service":"user-service","timestamp":"15:40:40"}
 {"email":"vepeham116@oronny.com","level":"warn","message":"Registration failed: User already exists","service":"user-service","timestamp":"15:42:28"}
 {"level":"warn","message":"Validation error during registration","service":"user-service","timestamp":"18:01:23","validationError":"\"id\" is not allowed"}
+{"level":"warn","message":"Validation error during registration","service":"user-service","timestamp":"12:17:03","validationError":"\"phoneNumber\" is required"}

@@ -7,6 +7,7 @@ import googleRoutes from './routes/googleRoute.js'
 import errorHandler from './middleware/errorHandlingMiddlewre.js'
 import logger from './logger/index.js'
 import responseMiddleware from './middleware/apiMiddleware.js'
+import fileUpload from 'express-fileupload'
 dotenv.config();
 const app = express();
 app.use(express.json());
@@ -16,6 +17,10 @@ app.use(cors({
     credentials: true, 
     
   }));
+app.use(fileUpload({
+  useTempFiles: true,
+  tempFileDir: '/tmp/',
+}));
 app.use(passport.initialize());
 
 app.use('/user',userRoutes);

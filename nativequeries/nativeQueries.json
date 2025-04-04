@@ -1,5 +1,5 @@
 {
-    "getUser" : "SELECT id , unique_id , next_action , register_complete FROM users WHERE email = ?",
+    "getUser" : "SELECT id , unique_id , next_action , register_complete FROM users WHERE email = ? OR unique_id = ? OR name = ?",
 
     "createUser": "INSERT INTO users (name, email, password , phone_number,verified_methods) VALUES (?, ?, ?, ?, ?)",
 
@@ -27,13 +27,13 @@
 
     "checkVerificationStatusForEmail": "SELECT e.isVerified , e.expires_at FROM soft_registrations AS s JOIN email_verifications AS e ON e.soft_registration_id = s.id WHERE  s.email = ?",
 
-    "insertInOtp": "INSERT INTO otp_verifications (soft_registration_id , phone_number , otp) VALUES (?, ?, ?)",
+    "insertInOtp": "INSERT INTO otp_verifications (user_id , phone_number , otp) VALUES (?, ?, ?)",
 
-    "updateOtp": "UPDATE otp_verifications SET otp = ? WHERE phone_number = ?",
+    "updateOtp": "UPDATE otp_verifications SET otp = ? , expires_at = (CURRENT_TIMESTAMP + INTERVAL 10 MINUTE) WHERE user_id = ?",
 
     "getOtp": "SELECT otp FROM otp_verifications WHERE phone_number = ?",
 
-    "verifyUser": "UPDATE otp_verifications SET isVerified = ? WHERE phone_number = ?",
+    "verifyUserOtp": "UPDATE otp_verifications SET isVerified = ? WHERE user_id = ?",
 
     "deleteFromSoftRegister": "DELETE FROM soft_registrations WHERE phone_number = ? OR email = ? ",
 
@@ -45,9 +45,20 @@
 
     "insertNewUser": "INSERT INTO users (email, next_action, unique_id) VALUES (?, ?, UUID())",
 
-    "getFromVerification" : "SELECT * FROM email_verifications WHERE verificationToken = ?",
+    "getFromVerification" : "SELECT * FROM email_verifications WHERE user_id = ?",
 
-    "verifyUserEmail" :"UPDATE users SET email_verified = ?, next_action = ? WHERE id = ?",
+    "verifyUserEmail" :"UPDATE users SET email_verified = ?, next_action = ? , password = ? WHERE id = ?",
 
-    "insertPassword":"UPDATE users SET password = ? , next_action = ? WHERE unique_id= ? "
+    "insertPassword":"UPDATE users SET password = ? WHERE unique_id= ? ",
+
+    "getOtpVerificationStatus":"SELECT isVerified  FROM otp_verifications WHERE user_id = ?",
+    
+    "getOtpExpiry": "SELECT expires_at , otp FROM otp_verifications WHERE user_id = ?",
+
+    "otpVerified" : "UPDATE users SET otp_verified = ? , next_action = ? ,phone_number = ? WHERE unique_id = ?",
+
+    "insertName" : "UPDATE users SET name = ? , firstname = ? , lastname = ? , next_action = ? WHERE email =?",
+
+    "updateProfileImage": "UPDATE users SET profile_image_url =? , next_action = ? , register_complete = true WHERE email = ?"
+
 }
