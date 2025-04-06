@@ -47,7 +47,7 @@
 
     "getFromVerification" : "SELECT * FROM email_verifications WHERE user_id = ?",
 
-    "verifyUserEmail" :"UPDATE users SET email_verified = ?, next_action = ? , password = ? WHERE id = ?",
+    "verifyUserEmail" :"UPDATE users SET email_verified = ?, next_action = ? , password = ? WHERE unique_id = ?",
 
     "insertPassword":"UPDATE users SET password = ? WHERE unique_id= ? ",
 

@@ -13,7 +13,7 @@ import twilio from "twilio";
 
 const client = twilio(process.env.ACCOUNT_SID, process.env.AUTH_TOKEN);
 
-export async function registerNewUser( email , connection){
+export async function registerNewUser( email , connection , next){
     try {
         await connection.beginTransaction();
         //queries
@@ -39,8 +39,8 @@ export async function verifyUser(user_id,email,password,connection){
         await connection.beginTransaction();
         await connection.query(nativeQueries.updateVerified , [true,user_id])
         //mark email_verified in users table as true and mark next_action as set Password
-        await connection.query(nativeQueries.verifyUserEmail,[true , NEXT_ACTIONS.PHONE_VERIFICATION ,user_id ]) 
-        await connection.query(nativeQueries.insertPassword,[password , unique_id])
+        await connection.query(nativeQueries.verifyUserEmail,[true , NEXT_ACTIONS.PHONE_VERIFICATION ,password , user_id ]) 
+        await connection.query(nativeQueries.insertPassword,[password , user_id])
         await connection.commit();
         await connection.release();
         return new ApiResponse( 200 , true, successMessages.emailVerified , [{email: email}] )

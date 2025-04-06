@@ -77,7 +77,7 @@ export const registerEmail = async(req,res , next)=>{
         }else{
             //enter email into the users table , set next_action to "EMAIL_VERIFICATION"
             const connection = await pool.getConnection();
-            res.locals.registerData = await registerNewUser(email , connection);
+            res.locals.registerData = await registerNewUser(email , connection , next);
             return next();
         }
     } catch (error) {
@@ -112,7 +112,7 @@ export async function emailVerification(req,res,next){
             new Date(user.expires_at) > new Date(Date.now())
         ){
 
-            res.locals.registerData = new ApiResponse(200 , successMessages.emailVerified, [{next_action:NEXT_ACTIONS.SET_PASSWORD, email:email} ])
+            // res.locals.registerData = new ApiResponse(200 , successMessages.emailVerified, [{next_action:NEXT_ACTIONS.SET_PASSWORD, email:email} ])
             const connection = await pool.getConnection();
             //hash the password 
             const hashedPassword = await hash(password);
@@ -270,33 +270,33 @@ export async function createProfile(req,res,next){
 }
 
 export async function uploadProfilePhoto(req,res,next) {
-            try {
-              if (!req.files || !req.files.profilePhoto) {
-                return res.status(400).json({ message: 'No file uploaded' });
-              }
-              const {email} = req.body
-              if(!email){
-                return next(new ApiError ((400) ,errorMessages.validationError ))
-              }
-              const file = req.files.profilePhoto;
-          
-              const result = await cloudinary.uploader.upload(file.tempFilePath, {
-                folder: 'profile_photos',
-              });
-              
-              const imageUrl = result.secure_url;
-              
-              const [updateResult] = await pool.query(nativeQueries.updateProfileImage , [imageUrl,NEXT_ACTIONS.NONE,email]);
-              console.log(result)
-              res.status(200).json({
-                message: 'Profile photo uploaded successfully',
-                imageUrl,
-              });
-            } catch (err) {
-              console.error(err);
-              return res.status(500).json({ message: 'Upload failed', error: err.message });
-            }
-          }
+    try {
+        if (!req.files || !req.files.profilePhoto) {
+        return res.status(400).json({ message: 'No file uploaded' });
+        }
+        const {email} = req.body
+        if(!email){
+        return next(new ApiError ((400) ,errorMessages.validationError ))
+        }
+        const file = req.files.profilePhoto;
+    
+        const result = await cloudinary.uploader.upload(file.tempFilePath, {
+        folder: 'profile_photos',
+        });
+        
+        const imageUrl = result.secure_url;
+        
+        const [updateResult] = await pool.query(nativeQueries.updateProfileImage , [imageUrl,NEXT_ACTIONS.NONE,email]);
+        console.log(result)
+        res.status(200).json({
+        message: 'Profile photo uploaded successfully',
+        imageUrl,
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: 'Upload failed', error: err.message });
+    }
+}
     
 
 
