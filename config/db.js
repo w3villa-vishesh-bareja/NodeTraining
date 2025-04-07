@@ -60,6 +60,13 @@ export async function genTokenForVerification(email){
     console.error(`${errorMessages.TokenGenerationError}`,err.message);
   }
 }
+export async function genTokenForEmailVerification(email , password){
+  try{
+    return await jwt.sign({email , password},process.env.JWT_SECRET_KEY,{expiresIn: '1h'});
+  }catch(err){
+    console.error(`${errorMessages.TokenGenerationError}`,err.message);
+  }
+}
 
 export async function verifyToken(token){
   try{

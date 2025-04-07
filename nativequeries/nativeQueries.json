@@ -1,5 +1,5 @@
 {
-    "getUser" : "SELECT id , unique_id , next_action , register_complete FROM users WHERE email = ? OR unique_id = ? OR name = ?",
+    "getUser" : "SELECT id , unique_id , next_action , email, register_complete FROM users WHERE email = ? OR unique_id = ? OR name = ?",
 
     "createUser": "INSERT INTO users (name, email, password , phone_number,verified_methods) VALUES (?, ?, ?, ?, ?)",
 
@@ -45,7 +45,7 @@
 
     "insertNewUser": "INSERT INTO users (email, next_action, unique_id) VALUES (?, ?, UUID())",
 
-    "getFromVerification" : "SELECT * FROM email_verifications WHERE user_id = ?",
+    "getFromVerification" : "SELECT * FROM email_verifications WHERE verificationToken = ?",
 
     "verifyUserEmail" :"UPDATE users SET email_verified = ?, next_action = ? , password = ? WHERE unique_id = ?",
 

@@ -17,7 +17,6 @@ export async function findOrCreateUser(profile) {
         const hashedPassword = await hash(randomPassword);
         console.log(hashedPassword);
 
-        //cr$2b$10$8h9c5irtIOOZ8SnSWQDhR.Y.udC2/TX6hm3665lHnpDwk0DLyKbUWeating user with isSocial = 1
         console.log("creating user");
         await pool.query(nativeQueries.createUserWithSocial, [
           profile.displayName,

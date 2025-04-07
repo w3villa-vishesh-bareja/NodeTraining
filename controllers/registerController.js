@@ -14,13 +14,6 @@ import ApiResponse from "../utils/ApiResponse.js";
 import { registerNewUser, verifyUser , updateToken, insertIntoOtp, updateInOtp, verifyUserNumber } from "../handler/registerHandler.js";
 import { NEXT_ACTIONS } from "../config/appConstants.js";
 import cloudinary from "../config/cloudinaryConfig.js";
-// const emailSchema = joi.object({
-//     name: joi.string().min(3).required(),
-//     email: joi.string().email().required(),
-//     password: joi.string().min(6).required(),
-//     phoneNumber: joi.string().required(),
-//     verificationMethod: joi.string().required(),
-//   });
 
 const emailSchema = joi.object({
   email: joi.string().email().required(),
@@ -68,7 +61,7 @@ export const registerEmail = async(req,res , next)=>{
                 if(user.next_action == NEXT_ACTIONS.EMAIL_VERIFICATION){
                     const connection = await pool.getConnection();
                     const token = await genTokenForVerification(user.email)
-                    res.locals.registerData = updateToken(user.user_id, token, user.email, connection)
+                    res.locals.registerData = await updateToken(user.unique_id, token , user.email, connection)
                     next();
                 }
                 res.locals.registerData = new ApiResponse (200, true ,"User exists Check for next_action" , [{next_action:user.next_action , user: {email:email,id:user.unique_id}} ]);
@@ -82,12 +75,13 @@ export const registerEmail = async(req,res , next)=>{
         }
     } catch (error) {
         console.error(error);
-        return next()
+        return next(new ApiError(500 , error.message));
     }
 }
 
 export async function emailVerification(req,res,next){
     // const {email} = req.body;
+    const {token} = req.user;
     const{error} = mergedSchema.validate(req.body);
     if(error){
         logger.warn({ message: "Validation error during registration", validationError: error.message });
@@ -96,7 +90,7 @@ export async function emailVerification(req,res,next){
 
     const{email ,unique_id , password} = req.body;
     //get info on expiry dates
-    const[result] = await pool.query(nativeQueries.getFromVerification , [unique_id]);
+    const[result] = await pool.query(nativeQueries.getFromVerification , [token]);
     console.log(result);
     const user =result[0];
     console.log(new Date(Date.now()));
@@ -125,6 +119,7 @@ export async function emailVerification(req,res,next){
             const token = await genTokenForVerification(email);
             const connection = await pool.getConnection();
             res.locals.registerData = updateToken(user.user_id, token, email, connection)
+            next();
         }
     }else{
         return res.status(400).json({messsage:"invalid token"})
@@ -216,7 +211,7 @@ export async function verifyOtp(req,res,next) {
     }
 
     //search user 
-    const [existingUser] = await connection.query(nativeQueries.getUser , [null , unique_id]);
+    const [existingUser] = await connection.query(nativeQueries.getUser , [null , unique_id, null]);
     const user = existingUser[0];
     if(existingUser.length>0){
         if(user.register_complete == 1){
@@ -261,7 +256,7 @@ export async function createProfile(req,res,next){
         if(result.affectedRows== 0){
             return next(new ApiResponse(404) , "user not found");
         }
-        res.locals.registerData =new ApiResponse(200 , successMessages.profileCreated);
+        res.locals.registerData =new ApiResponse(200 , true, successMessages.profileCreated , [{user:{email:email , username:username , firstname:firstname , lastname:lastname }}]);
         next();
     } catch (error) {
         console.error(error);
@@ -269,34 +264,38 @@ export async function createProfile(req,res,next){
     }
 }
 
-export async function uploadProfilePhoto(req,res,next) {
+export async function uploadProfilePhoto(req, res, next) {
     try {
-        if (!req.files || !req.files.profilePhoto) {
-        return res.status(400).json({ message: 'No file uploaded' });
-        }
-        const {email} = req.body
-        if(!email){
-        return next(new ApiError ((400) ,errorMessages.validationError ))
-        }
+      const { email } = req.body;
+      if (!email) {
+        return next(new ApiError(400, errorMessages.validationError));
+      }
+  
+      let imageUrl;
+  
+      if (req.files && req.files.profilePhoto) {
         const file = req.files.profilePhoto;
-    
         const result = await cloudinary.uploader.upload(file.tempFilePath, {
-        folder: 'profile_photos',
+          folder: 'profile_photos',
         });
-        
-        const imageUrl = result.secure_url;
-        
-        const [updateResult] = await pool.query(nativeQueries.updateProfileImage , [imageUrl,NEXT_ACTIONS.NONE,email]);
-        console.log(result)
-        res.status(200).json({
+        imageUrl = result.secure_url;
+      } else {
+        // 👇 Use your default image here (can be hosted on Cloudinary or anywhere public)
+        imageUrl = "https://res.cloudinary.com/dlfgbwhpv/image/upload/w_1000,c_fill,ar_1:1,g_auto,r_max,bo_5px_solid_red,b_rgb:262c35/v1744003923/blank-profile-picture-973460_1280_khfp9z.png";
+      }
+  
+      const [updateResult] = await pool.query(nativeQueries.updateProfileImage, [imageUrl, NEXT_ACTIONS.NONE, email]);
+  
+      res.status(200).json({
         message: 'Profile photo uploaded successfully',
         imageUrl,
-        });
+      });
     } catch (err) {
-        console.error(err);
-        return res.status(500).json({ message: 'Upload failed', error: err.message });
+      console.error(err);
+      return res.status(500).json({ message: 'Upload failed', error: err.message });
     }
-}
+  }
+  
     
 
 

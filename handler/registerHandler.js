@@ -21,14 +21,14 @@ export async function registerNewUser( email , connection , next){
         const [newUser] = await connection.query(nativeQueries.getUser , [email,null ,null]);
         const token = await genTokenForVerification(email)
         await connection.query(nativeQueries.InsertIntoEmailVerification , [newUser[0].unique_id , token])
-        // await mailer(email , token);
+        await mailer(email , token);
         await connection.commit();
         await connection.release();
-        return new ApiResponse(201 , true, "email created , PLease set password and verify the email" , [{email: email , unique_id : newUser[0].unique_id}] )
+        return new ApiResponse(201 , true, "email sent , please verify the email and then the password" , [{user:{email: email , unique_id : newUser[0].unique_id}}] )
     } catch (error) {
         await connection.rollback();
         await connection.release();
-        console.error(error)
+        console.error(error);
         return next(new ApiError(500));
     }
 }
@@ -43,7 +43,7 @@ export async function verifyUser(user_id,email,password,connection){
         await connection.query(nativeQueries.insertPassword,[password , user_id])
         await connection.commit();
         await connection.release();
-        return new ApiResponse( 200 , true, successMessages.emailVerified , [{email: email}] )
+        return new ApiResponse( 200 , true, successMessages.emailVerified , [{user:{email: email , unique_id:user_id}, next_action:NEXT_ACTIONS.PHONE_VERIFICATION}] )
 
     } catch (error) {
         await connection.rollback();
@@ -55,14 +55,14 @@ export async function verifyUser(user_id,email,password,connection){
 export async function updateToken(id, verificationToken, email, connection) {
     try {
       connection.beginTransaction();
-      console.log(id);
+      console.log(id , email);
       //   const token = await genTokenForVerification(email);
       console.log(verificationToken);
       await connection.query(nativeQueries.updateToken, [verificationToken, id]);
       await mailer(email, verificationToken);
       await connection.commit();
       await connection.release();
-      return next(new ApiError( 410 , errorMessages.expiredLink ))
+      return new ApiResponse( 200 , true , successMessages.emailSent , [{user:{email:email , unique_id : id , token : verificationToken}}] )
     } catch (err) {
         await connection.rollback();
         await connection.release();
@@ -76,25 +76,25 @@ export async function insertIntoOtp(uuid , number , otp , connection ,next){
         await connection.beginTransaction();
         await connection.query(nativeQueries.insertInOtp,[uuid , number , otp]);
         await client.messages
-        .create({
-          body: `Verification OTP for (This is a test) ${otp}`,
-          from: process.env.TWILIO_PHONE_NUMBER,
-          to: number,
-        })
-        .then(async () => {
-          await connection.commit();
-          await connection.release();
-          return new ApiResponse(200 , true , successMessages.otpSent ,[{phone_number : number , unique_id: uuid}]);
-       })
-        .catch(async (error) => {
-          console.error("Error sending message:", error);
-          // res.status(500).json({ error: error.message });
-          await connection.rollback();
-          await connection.release();
-          return next(new ApiError(500 , errorMessages.internalServerError , [error]));
+    //     .create({
+    //       body: `Verification OTP for (This is a test) ${otp}`,
+    //       from: process.env.TWILIO_PHONE_NUMBER,
+    //       to: number,
+    //     })
+    //     .then(async () => {
+    //       await connection.commit();
+    //       await connection.release();
+    //       return new ApiResponse(200 , true , successMessages.otpSent ,[{phone_number : number , unique_id: uuid}]);
+    //    })
+    //     .catch(async (error) => {
+    //       console.error("Error sending message:", error);
+    //       // res.status(500).json({ error: error.message });
+    //       await connection.rollback();
+    //       await connection.release();
+    //       return next(new ApiError(500 , errorMessages.internalServerError , [error]));
   
-        });
-        
+    //     });
+    return new ApiResponse(200 , successMessages.otpSent , [{user:{phone_number: number , unique_id:uuid}}]);
     }catch(error){
         await connection.rollback();
         await connection.release();
@@ -124,7 +124,9 @@ export async function updateInOtp(uuid ,otp , number , connection , next ) {
         //   await connection.release();
         //   return next(new ApiError(500 , errorMessages.internalServerError , [error]));
         // });
-        return new ApiResponse(200 , successMessages.otpSent);
+        await connection.commit();
+        await connection.release();
+        return new ApiResponse(200 , successMessages.otpSent , [{user:{phone_number: number , unique_id:uuid}}]);
     } catch (error) {
         await connection.rollback();
         await connection.release();
