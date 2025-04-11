@@ -1,4 +1,4 @@
-import { verifyToken } from "../config/db.js";
+import { verifyToken } from "../config/dbService.js";
 
 export const verifyJwt = async (req, res, next) => {
   const authHeader = req.headers["authorization"];

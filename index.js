@@ -2,11 +2,12 @@ import express from 'express'
 import dotenv from 'dotenv'
 import cors from 'cors'
 import passport from 'passport'
-import userRoutes from './routes/userRoute.js'
+import registerRoute from './routes/registerRoute.js'
+import loginRoutes from "./routes/loginRoute.js"
 import googleRoutes from './routes/googleRoute.js'
-import errorHandler from './middleware/errorHandlingMiddlewre.js'
-import logger from './logger/index.js'
-import responseMiddleware from './middleware/apiMiddleware.js'
+import profileRoutes from './routes/profileRoute.js'
+import errorHandler from './middleware/errorMiddlewre.js'
+import responseMiddleware from './middleware/responseMiddleware.js'
 import fileUpload from 'express-fileupload'
 dotenv.config();
 const app = express();
@@ -15,7 +16,6 @@ app.use(cors({
     origin: ['http://localhost:5173','*'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'], 
     credentials: true, 
-    
   }));
 app.use(fileUpload({
   useTempFiles: true,
@@ -23,14 +23,51 @@ app.use(fileUpload({
 }));
 app.use(passport.initialize());
 
-app.use('/user',userRoutes);
+app.use('/register',registerRoute , responseMiddleware);
+app.use('/login',loginRoutes , responseMiddleware);
+app.use('/user',profileRoutes , responseMiddleware);
 app.use('/',googleRoutes);
 
-app.use(responseMiddleware);
 app.use(errorHandler);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 const port = process.env.PORT||5000;
 app.listen(port , ()=>{
     console.log(`server running on PORT: ${port}`)
 })
+
+export default app;

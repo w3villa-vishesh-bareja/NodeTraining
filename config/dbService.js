@@ -10,7 +10,7 @@ export const pool = mysql.createPool({
   password: "password",
   database: "node_db",
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: 100,
   queueLimit: 0,
 });
 
@@ -53,20 +53,14 @@ export async function genToken(id,name,email){
 }
 
 //for verification email
-export async function genTokenForVerification(email){
+export async function genTokenForVerification(email , expiresIn='1h'){
   try{
-    return await jwt.sign({email},process.env.JWT_SECRET_KEY,{expiresIn: '1h'});
+    return await jwt.sign({email},process.env.JWT_SECRET_KEY,{expiresIn: expiresIn});
   }catch(err){
     console.error(`${errorMessages.TokenGenerationError}`,err.message);
   }
 }
-export async function genTokenForEmailVerification(email , password){
-  try{
-    return await jwt.sign({email , password},process.env.JWT_SECRET_KEY,{expiresIn: '1h'});
-  }catch(err){
-    console.error(`${errorMessages.TokenGenerationError}`,err.message);
-  }
-}
+
 
 export async function verifyToken(token){
   try{

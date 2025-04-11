@@ -3,7 +3,7 @@
 import pool, {
     hash,
     genTokenForVerification,
-  } from "../config/db.js";
+  } from "../config/dbService.js";
 import joi from "joi";
 import nativeQueries from "../nativequeries/nativeQueries.json" assert { type: "json" };
 import errorMessages from "../config/errorMessages.json" assert { type: "json" };
@@ -11,16 +11,14 @@ import successMessages from "../config/successMessages.json" assert { type: "jso
 import { ApiError } from "../utils/ApiError.js";
 import logger from "../logger/index.js";
 import ApiResponse from "../utils/ApiResponse.js";
-import { registerNewUser, verifyUser , updateToken, insertIntoOtp, updateInOtp, verifyUserNumber } from "../handler/registerHandler.js";
+import { registerNewUser, verifyUser , updateToken, insertIntoOtp, updateInOtp, verifyUserNumber, generateImageUrl } from "../handler/registerHandler.js";
 import { NEXT_ACTIONS } from "../config/appConstants.js";
-import cloudinary from "../config/cloudinaryConfig.js";
 
 const emailSchema = joi.object({
   email: joi.string().email().required(),
 });
 const passwordSchmea = joi.object({
     password:joi.string().min(6).required(),
-    unique_id:joi.string().required(),
 })
 const phoneSchema = joi.object({
     number: joi.string().min(12).required(),
@@ -55,22 +53,22 @@ export const registerEmail = async(req,res , next)=>{
             if(user.register_complete == 1){
                 //if true
                 logger.warn({ message: "Registration failed: User already exists", email });
-                return next(new ApiError(409 ,errorMessages.userExists ,[{id:user.unique_id}]))
+                return next(new ApiError(409 ,errorMessages.userExists ,[{user:{unique_id:user.unique_id}}]))
             }else if (user.register_complete == 0){
                 //if registeration is incomplete return next_action to frontend
                 if(user.next_action == NEXT_ACTIONS.EMAIL_VERIFICATION){
                     const connection = await pool.getConnection();
                     const token = await genTokenForVerification(user.email)
-                    res.locals.registerData = await updateToken(user.unique_id, token , user.email, connection)
+                    res.locals.data = await updateToken(user.unique_id, token , user.email, connection)
                     next();
                 }
-                res.locals.registerData = new ApiResponse (200, true ,"User exists Check for next_action" , [{next_action:user.next_action , user: {email:email,id:user.unique_id}} ]);
+                res.locals.data = new ApiResponse (200, true ,"User exists Check for next_action" , [{next_action:user.next_action , user: {email:email,id:user.unique_id}} ]);
                 next()
             }
         }else{
             //enter email into the users table , set next_action to "EMAIL_VERIFICATION"
             const connection = await pool.getConnection();
-            res.locals.registerData = await registerNewUser(email , connection , next);
+            res.locals.data = await registerNewUser(email , connection , next);
             return next();
         }
     } catch (error) {
@@ -88,7 +86,7 @@ export async function emailVerification(req,res,next){
         return next(new ApiError(400, errorMessages.validationError, [error.message]));
     }
 
-    const{email ,unique_id , password} = req.body;
+    const{email  , password} = req.body;
     //get info on expiry dates
     const[result] = await pool.query(nativeQueries.getFromVerification , [token]);
     console.log(result);
@@ -99,18 +97,16 @@ export async function emailVerification(req,res,next){
         if(user.isVerified == 1){
             //if it was verified this shouldnt be called 
             // get the nextAction from the users table to redirect the user to valid step
-            const [action] = await pool.query(nativeQueries.getUser,[email , null]);
-            return next(new ApiError(409,"this email already exists", [{next_action : action[0].next_action,email:email}]))
+            const [action] = await pool.query(nativeQueries.getUser,[email , null , null]);
+            return next(new ApiError(409,errorMessages.userExists, [{next_action : action[0].next_action,email:email}]))
         }else if(
-            user.isVerified == 0 &&
+            user.isVerified == false &&
             new Date(user.expires_at) > new Date(Date.now())
         ){
-
-            // res.locals.registerData = new ApiResponse(200 , successMessages.emailVerified, [{next_action:NEXT_ACTIONS.SET_PASSWORD, email:email} ])
             const connection = await pool.getConnection();
             //hash the password 
             const hashedPassword = await hash(password);
-            res.locals.registerData = await verifyUser(user.user_id ,email , hashedPassword, connection );
+            res.locals.data = await verifyUser(user.user_id ,email , hashedPassword, connection );
             next();
         }else if(
         user.isVerified == false &&
@@ -118,36 +114,38 @@ export async function emailVerification(req,res,next){
         ){
             const token = await genTokenForVerification(email);
             const connection = await pool.getConnection();
-            res.locals.registerData = updateToken(user.user_id, token, email, connection)
+            res.locals.data = await updateToken(user.user_id, token, email, connection)
             next();
         }
     }else{
-        return res.status(400).json({messsage:"invalid token"})
+        // return res.status(400).json({messsage:"invalid token"})
+        return next(new ApiError(400,))
+
     }
         
 }
 
-export async function storePassword(req,res,next){
-    const{error} = mergedSchema.validate(req.body);
-    if(error){
-        logger.warn({ message: "Validation error during registration", validationError: error.message });
-        return next(new ApiError(400, errorMessages.validationError, [error.message]));
-    }
+// export async function storePassword(req,res,next){
+//     const{error} = mergedSchema.validate(req.body);
+//     if(error){
+//         logger.warn({ message: "Validation error during registration", validationError: error.message });
+//         return next(new ApiError(400, errorMessages.validationError, [error.message]));
+//     }
 
-    const{password , unique_id , email} = req.body;
-    if(!unique_id){
-        return next(new ApiError(404,"id is needed for this operation"));
-    }
-    console.log(unique_id)
-    try{
-        const hashedPassword = await hash(password);
-        await pool.query(nativeQueries.insertPassword , [hashedPassword , NEXT_ACTIONS.PHONE_VERIFICATION, String(unique_id)]);
-        // res.locals.registerData = new ApiResponse(200 , true , "Password Stored");
-        next();
-    }catch(error){
-        return next(new ApiError(500 , "Internal server error" ,[error]))
-    }
-} 
+//     const{password , unique_id , email} = req.body;
+//     if(!unique_id){
+//         return next(new ApiError(404,"id is needed for this operation"));
+//     }
+//     console.log(unique_id)
+//     try{
+//         const hashedPassword = await hash(password);
+//         await pool.query(nativeQueries.insertPassword , [hashedPassword , NEXT_ACTIONS.PHONE_VERIFICATION, String(unique_id)]);
+//         // res.locals.data = new ApiResponse(200 , true , "Password Stored");
+//         next();
+//     }catch(error){
+//         return next(new ApiError(500 , "Internal server error" ,[error]))
+//     }
+// } 
 
 export async function sendOtp(req,res,next){
     const {error} = phoneSchema.validate(req.body);
@@ -159,6 +157,9 @@ export async function sendOtp(req,res,next){
     }
 
     const{number , unique_id} = req.body
+    if(!unique_id){
+        return next(new ApiError(400 , errorMessages.validationError + "unique_id is required"))
+    }
 
     try{
         let digits = "0123456789";
@@ -167,31 +168,31 @@ export async function sendOtp(req,res,next){
         for (let index = 0; index < 4; index++) {
           OTP += digits[Math.floor(Math.random() * 10)];
         }
-        const[result] = await connection.query(nativeQueries.getOtpVerificationStatus,[unique_id])
+        const [result] = await connection.query(nativeQueries.getOtpVerificationStatus,[number])
         const user = result[0];
         if(result.length > 0){
             //check if verified
             if(user.isVerified == 1){
-                //if it was verified this shouldnt be called 
+            //if it was verified this shouldnt be called 
             // get the nextAction from the users table to redirect the user to valid step
-            const [action] = await pool.query(nativeQueries.getUser,[null, unique_id]);
-            return next(new ApiError(409,"this number already exists", [{next_action : action[0].next_action,phone_number:action[0].phone_number}]))
+            const [action] = await pool.query(nativeQueries.getUser,[null, unique_id , null]);
+            return next(new ApiError(409,errorMessages.numberExists, [{next_action : action[0].next_action,phone_number:action[0].phone_number}]))
 
             }else if(user.isVerified ==0){
                 console.log(OTP)
                 //if status is not verified , update otp
-                res.locals.registerData = await updateInOtp(unique_id, OTP , number ,connection, next);
+                res.locals.data = await updateInOtp(unique_id, OTP , number ,connection, next);
                 next()
             }
         }else{
             console.log(OTP)
             //if the user is not in otp_verifications insert in the table
-            res.locals.registerData = await insertIntoOtp(unique_id,number , OTP, connection , next);
+            res.locals.data = await insertIntoOtp(unique_id,number , OTP, connection , next);
             next()
         }
     }catch(error){
         console.log(error)
-        return next(new ApiError(500 , "Internal server error" ,[error]))
+        return next(new ApiError(500 , errorMessages.internalServerError ,[error]))
     }
 
 }
@@ -203,7 +204,7 @@ export async function verifyOtp(req,res,next) {
         logger.warn({ message: "Validation error during registration", validationError: error.message });
         return next(new ApiError(400, errorMessages.validationError, [error.message]));
     }
-    //
+ 
     const {number , otp , unique_id} = req.body;
 
     if(!otp){
@@ -230,11 +231,11 @@ export async function verifyOtp(req,res,next) {
             return next(new ApiError(401 , errorMessages.wrongOTP));
         }
         //verify otp
-        res.locals.registerData = await verifyUserNumber(unique_id , number  , connection , next);
+        res.locals.data = await verifyUserNumber(unique_id , number  , connection , next);
         next();
 
     }else{
-        return next(new ApiError(409 , "User registration not complete. Cannot proceed with phone verification."));
+        return next(new ApiError(409 , errorMessages.pendingRegistrationSteps));
     }
 }
 
@@ -254,9 +255,9 @@ export async function createProfile(req,res,next){
         const [result]= await pool.query(nativeQueries.insertName ,[username , firstname , lastname, NEXT_ACTIONS.UPLOAD_PROFILE_PHOTO, email])
         console.log(result);
         if(result.affectedRows== 0){
-            return next(new ApiResponse(404) , "user not found");
+            return next(new ApiError(404) , errorMessages.userNotFound);
         }
-        res.locals.registerData =new ApiResponse(200 , true, successMessages.profileCreated , [{user:{email:email , username:username , firstname:firstname , lastname:lastname }}]);
+        res.locals.data =new ApiResponse(200 , true, successMessages.profileCreated , [{user:{email:email , username:username , firstname:firstname , lastname:lastname }}]);
         next();
     } catch (error) {
         console.error(error);
@@ -272,29 +273,16 @@ export async function uploadProfilePhoto(req, res, next) {
       }
   
       let imageUrl;
-  
-      if (req.files && req.files.profilePhoto) {
-        const file = req.files.profilePhoto;
-        const result = await cloudinary.uploader.upload(file.tempFilePath, {
-          folder: 'profile_photos',
-        });
-        imageUrl = result.secure_url;
-      } else {
-        // 👇 Use your default image here (can be hosted on Cloudinary or anywhere public)
-        imageUrl = "https://res.cloudinary.com/dlfgbwhpv/image/upload/w_1000,c_fill,ar_1:1,g_auto,r_max,bo_5px_solid_red,b_rgb:262c35/v1744003923/blank-profile-picture-973460_1280_khfp9z.png";
-      }
-  
+      imageUrl = await generateImageUrl(req, email);
       const [updateResult] = await pool.query(nativeQueries.updateProfileImage, [imageUrl, NEXT_ACTIONS.NONE, email]);
-  
-      res.status(200).json({
-        message: 'Profile photo uploaded successfully',
-        imageUrl,
-      });
+
+      res.locals.data = new ApiResponse(200 , true , "Profile uploaded" , [{user:{imageUrl:imageUrl} , next_action: NEXT_ACTIONS.NONE}])
+      next();
     } catch (err) {
       console.error(err);
       return res.status(500).json({ message: 'Upload failed', error: err.message });
     }
-  }
+}
   
     
 

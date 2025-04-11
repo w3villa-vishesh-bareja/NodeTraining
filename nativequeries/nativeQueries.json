@@ -1,11 +1,11 @@
 {
-    "getUser" : "SELECT id , unique_id , next_action , email, register_complete FROM users WHERE email = ? OR unique_id = ? OR name = ?",
+    "getUser" : "SELECT id , name , unique_id , next_action , email, register_complete , password FROM users WHERE email = ? OR unique_id = ? OR name = ?",
 
     "createUser": "INSERT INTO users (name, email, password , phone_number,verified_methods) VALUES (?, ?, ?, ?, ?)",
 
     "updateUserEmail":"UPDATE users SET verified_methods = IF(verified_methods IS NULL, 'EMAIL', CONCAT(verified_methods, ',EMAIL')) WHERE email = ?",
 
-    "createUserWithSocial": "INSERT INTO users (name, email, password, verified_methods, isSocial) VALUES (?, ?, ?, ?, ?)",
+    "createUserWithSocial": "INSERT INTO users ( email, password, email_verified, name , firstname , lastname , profile_image_url , isSocial , next_action , unique_id , register_complete) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ? , (UUID()) , true)",
 
     "addSocialUser": "INSERT INTO social_logins (userID, provider, providerId) VALUES (?, ?, ?) ",
 
@@ -51,7 +51,7 @@
 
     "insertPassword":"UPDATE users SET password = ? WHERE unique_id= ? ",
 
-    "getOtpVerificationStatus":"SELECT isVerified  FROM otp_verifications WHERE user_id = ?",
+    "getOtpVerificationStatus":"SELECT isVerified  FROM otp_verifications WHERE phone_number = ?",
     
     "getOtpExpiry": "SELECT expires_at , otp FROM otp_verifications WHERE user_id = ?",
 
@@ -59,6 +59,10 @@
 
     "insertName" : "UPDATE users SET name = ? , firstname = ? , lastname = ? , next_action = ? WHERE email =?",
 
-    "updateProfileImage": "UPDATE users SET profile_image_url =? , next_action = ? , register_complete = true WHERE email = ?"
+    "updateProfileImage": "UPDATE users SET profile_image_url =? , next_action = ? , register_complete = true WHERE email = ?",
+
+    "getProfile":"SELECT name , firstname , lastname , phone_number , email , unique_id , profile_image_url From users WHERE unique_id= ? OR email = ?" ,
+
+    "checkName" : "SELECT name FROM users WHERE name LIKE ?"
 
 }

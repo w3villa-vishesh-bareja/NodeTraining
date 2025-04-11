@@ -1,5 +1,5 @@
 const responseMiddleware = async(req, res, next)=>{
-    let { statusCode , success , message , data} = res.locals.registerData
+    let { statusCode , success , message , data} = res.locals.data
     console.log(success , data )
     res.status(statusCode).json({
         statusCode: statusCode || 200,

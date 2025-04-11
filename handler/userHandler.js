@@ -1,4 +1,4 @@
-import pool, { genTokenForVerification } from "../config/db.js";
+import pool, { genTokenForVerification } from "../config/dbService.js";
 import nativeQueries from "../nativequeries/nativeQueries.json" assert { type: "json" };
 import mailer from "../utils/mailHandler.js";
 
