@@ -11,6 +11,8 @@
 
     "otpVerified":"OTP verified",
 
-    "profileCreated": "Profile created"
+    "profileCreated": "Profile created",
+
+    "userFound": "user found"
     
 }

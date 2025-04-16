@@ -7,7 +7,7 @@ const errorHandler = (err,req,res,next)=>{
         success : false,
         message : message || "Internal server error",
         errors : errors || [],
-        stack : stackk   //remove in production
+        stack : stackk  
     })
 }
 

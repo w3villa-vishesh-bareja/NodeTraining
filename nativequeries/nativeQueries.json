@@ -1,5 +1,5 @@
 {
-    "getUser" : "SELECT id , name , unique_id , next_action , email, register_complete , password FROM users WHERE email = ? OR unique_id = ? OR name = ?",
+    "getUser" : "SELECT id , name , unique_id , next_action , email, register_complete , password , email_verified FROM users WHERE email = ? OR unique_id = ? OR name = ?",
 
     "createUser": "INSERT INTO users (name, email, password , phone_number,verified_methods) VALUES (?, ?, ?, ?, ?)",
 
@@ -29,7 +29,7 @@
 
     "insertInOtp": "INSERT INTO otp_verifications (user_id , phone_number , otp) VALUES (?, ?, ?)",
 
-    "updateOtp": "UPDATE otp_verifications SET otp = ? , expires_at = (CURRENT_TIMESTAMP + INTERVAL 10 MINUTE) WHERE user_id = ?",
+    "updateOtp": "UPDATE otp_verifications SET otp = ? , phone_number = ? , expires_at = (CURRENT_TIMESTAMP + INTERVAL 10 MINUTE) WHERE user_id = ?",
 
     "getOtp": "SELECT otp FROM otp_verifications WHERE phone_number = ?",
 
@@ -51,7 +51,7 @@
 
     "insertPassword":"UPDATE users SET password = ? WHERE unique_id= ? ",
 
-    "getOtpVerificationStatus":"SELECT isVerified  FROM otp_verifications WHERE phone_number = ?",
+    "getOtpVerificationStatus":"SELECT isVerified  FROM otp_verifications WHERE user_id = ?",
     
     "getOtpExpiry": "SELECT expires_at , otp FROM otp_verifications WHERE user_id = ?",
 

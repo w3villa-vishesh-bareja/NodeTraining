@@ -69,7 +69,8 @@ import mailer from "../utils/mailHandler.js";
 
 
 
-export const login = async (req, res ) => {
+export const login = async (req, res , next ) => {
+
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({ message: errorMessages.missingFields });
@@ -77,12 +78,24 @@ export const login = async (req, res ) => {
 
   try {
     const [users] = await pool.query(nativeQueries.getUser, [email , null , null]);
-
+  
     if (users.length === 0) {
       return next(new ApiError(401,errorMessages.invalidCredentials))
     }
+    if(users[0].email_verified == 0){
+      return next(new ApiError(401,errorMessages.userNotFound));
+    }
+    
     if(users[0].register_complete == 0){
-      return next(new ApiError(401,"please complete the registeraion process"))
+      const user = users[0];
+      const isValid = await compare(password, user.password);
+  
+      if (!isValid) {
+        return next(new ApiError(401,errorMessages.invalidCredentials))
+      }
+      const token = await genToken(user.unique_id, user.name, user.email);
+      res.locals.data = new ApiResponse(200 , true , successMessages.loginSuccessful + "Additional Steps are required" , [{user:{email ,unique_id:users[0].unique_id ,next_action:users[0].next_action , token:token }}]);
+      return next();
     }
 
     const user = users[0];
@@ -90,7 +103,6 @@ export const login = async (req, res ) => {
 
     if (!isValid) {
       return next(new ApiError(401,errorMessages.invalidCredentials))
-
     }
     const token = await genToken(user.unique_id, user.name, user.email);
     res.cookie("token", token);
@@ -105,6 +117,7 @@ export const login = async (req, res ) => {
             id: user.id,
             name: user.name,
             email: user.email,
+            next_action:users[0].next_action
           },
           token: token,
         },
@@ -214,6 +227,19 @@ export async function forgotPassword(req,res,next){
   next();
 }
 
+export async function getUser(req,res,next){
+  const {email} = req.user;
+  if(!email){
+    return next(new ApiError(400 , errorMessages.BadRquest));
+  }
+  const [result] = await pool.query(nativeQueries.getProfile , [null,email]);
+  if(!result.length>0){
+    return next(new ApiError(400 , errorMessages.userNotFound));
+  }
+  const user = result[0];
+  res.locals.data  = new ApiResponse(200 , true , successMessages.userFound , [{user:user}])
+  return next();
+}
 // export const sendEmail = async (req, res) => {
 //   const connection = await pool.getConnection();
 //   const { id, Action } = req.body;

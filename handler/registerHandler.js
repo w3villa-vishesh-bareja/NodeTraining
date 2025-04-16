@@ -1,4 +1,4 @@
-import  { genTokenForVerification } from "../config/dbService.js";
+import  pool, { genTokenForVerification } from "../config/dbService.js";
 import nativeQueries from "../nativequeries/nativeQueries.json" assert { type: "json" };
 import successMessages from "../config/successMessages.json" assert {type :"json"}
 import errorMessages from "../config/errorMessages.json" assert {type:"json"}
@@ -7,16 +7,17 @@ import { NEXT_ACTIONS } from "../config/appConstants.js";
 import { ApiError } from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import twilio from "twilio";
+import cloudinary from "../config/cloudinaryConfig.js";
 
 const client = twilio(process.env.ACCOUNT_SID, process.env.AUTH_TOKEN);
 
-export async function registerNewUser( email , connection , next){
+export async function registerNewUser( email , hashedPassword, connection , next){
     try {
         await connection.beginTransaction();
         //queries
         await connection.query(nativeQueries.insertNewUser,[email ,NEXT_ACTIONS.EMAIL_VERIFICATION]);
         const [newUser] = await connection.query(nativeQueries.getUser , [email,null ,null]);
-        const token = await genTokenForVerification(email)
+        const token = await genTokenForVerification({email:email , password:hashedPassword})
         await connection.query(nativeQueries.InsertIntoEmailVerification , [newUser[0].unique_id , token])
         await mailer(email , token);
         await connection.commit();
@@ -39,7 +40,7 @@ export async function verifyUser(user_id,email,password,connection){
         await connection.query(nativeQueries.insertPassword,[password , user_id])
         await connection.commit();
         await connection.release();
-        return new ApiResponse( 200 , true, successMessages.emailVerified , [{user:{email: email , unique_id:user_id}, next_action:NEXT_ACTIONS.PHONE_VERIFICATION}] )
+        return new ApiResponse( 201 , true, successMessages.emailVerified , [{user:{email: email , unique_id:user_id}, next_action:NEXT_ACTIONS.PHONE_VERIFICATION}] )
 
     } catch (error) {
         await connection.rollback();
@@ -105,7 +106,7 @@ export async function insertIntoOtp(uuid , number , otp , connection ,next){
 export async function updateInOtp(uuid ,otp , number , connection , next ) {
     try {
         await connection.beginTransaction();
-        await connection.query(nativeQueries.updateOtp,[otp , uuid]);
+        await connection.query(nativeQueries.updateOtp,[otp , number, uuid]);
         // await client.messages
         // .create({
         //   body: `Verification OTP for (This is a test) ${otp}`,
@@ -151,12 +152,13 @@ export async function verifyUserNumber(uuid , number, connection , next){
 
 export async function generateImageUrl(req,email,next) {
    try {
+    let imageUrl
     if (req.files && req.files.profilePhoto) {
         const file = req.files.profilePhoto;
         const result = await cloudinary.uploader.upload(file.tempFilePath, {
           folder: 'profile_photos',
         });
-        imageUrl = result.secure_url;
+         imageUrl = result.secure_url;
         return imageUrl
       } else {
         const [result] = await pool.query(nativeQueries.getProfile,[null , email]);

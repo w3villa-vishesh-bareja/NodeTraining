@@ -1,4 +1,4 @@
-import pool from "../config/dbService.js";
+import pool, { genTokenForVerification } from "../config/dbService.js";
 import nativeQueries from "../nativequeries/nativeQueries.json" assert { type: "json" };
 import errorMessages from "../config/errorMessages.json" assert { type: "json" };
 import successMessages from "../config/successMessages.json" assert { type: "json" };
@@ -14,7 +14,6 @@ export async function findOrCreateUser(profile) {
       let result;
       let username;
       let nameSeach;
-      let user;
       let email = profile.emails[0].value;
       const userData = await redis.get(email);
   
@@ -46,12 +45,9 @@ export async function findOrCreateUser(profile) {
           await redis.setEx(`${email}`, 600, JSON.stringify(userDetails));
           return { redirect: true, email }; // again return redirect
         }
-  
-        const randomPassword = generateRandomString();
-        const hashedPassword = await hash(randomPassword);
-  
+
+        const hashedPassword = await hash(generateRandomString());
         let imageUrl;
-  
         if (profilePhoto) {
           imageUrl = profilePhoto;
         } else {
@@ -85,14 +81,12 @@ export async function findOrCreateUser(profile) {
           profile.id,
         ]);
       }
-    //   console.log(results[0][0]);
       return result[0]; 
     } catch (err) {
       console.error("Error in findOrCreateUser:", err);
       throw err;
     }
   }
-  
 
 export const handleGoogleCallback = async (req, res) => {
   console.log("in callback");
@@ -101,14 +95,13 @@ export const handleGoogleCallback = async (req, res) => {
   }
   const user = req.user;
   const token = await genToken(user.id, user.name, user.email);
-  console.log(token);
   res
     .cookie("token", token, {
-      httpOnly: true,
+      httpOnly: false,
       secure: false,
       sameSite: "Lax",
     })
-    .redirect("http://localhost:5173/LoggedIn");
+    .redirect("http://localhost:5173/dashboard");
 };
 
 export const setUsername = async (req, res, next) => {
@@ -122,15 +115,18 @@ export const setUsername = async (req, res, next) => {
     const [results] = await pool.query(nativeQueries.checkName, [
       `${username}%`,
     ]);
+
     const matchExists = results.some((row) => row.name === username);
 
     if (matchExists) {
       return next(new ApiError(409, errorMessages.nameExists));
     }
 
-    const user = await redis.get(email);
+    const user = JSON.parse(await redis.get(email));
+
+    console.log(user)
     if (!user) {
-      next(new ApiError(401, errorMessages.sessionExpired));
+      return next(new ApiError(401, errorMessages.sessionExpired));
     }
     const hashedPassword = await hash(generateRandomString());
     console.log("user:", user);
@@ -141,18 +137,19 @@ export const setUsername = async (req, res, next) => {
       username,
       user.firstName,
       user.lastName,
-      user.imageUrl,
+      user.profilePhoto,
       1,
       NEXT_ACTIONS.NONE,
     ]);
     await redis.del(email);
+    const token = await genTokenForVerification(email)
     res.locals.data = new ApiResponse(
       201,
       true,
       successMessages.userRegistered,
-      [{ user }]
+      [{ user:user , token:token }]
     );
-    next();
+    return next();
   } catch (error) {
     console.log(error);
     next(new ApiError(500));

@@ -53,9 +53,9 @@ export async function genToken(id,name,email){
 }
 
 //for verification email
-export async function genTokenForVerification(email , expiresIn='1h'){
+export async function genTokenForVerification(payload , expiresIn='1h'){
   try{
-    return await jwt.sign({email},process.env.JWT_SECRET_KEY,{expiresIn: expiresIn});
+    return await jwt.sign(payload,process.env.JWT_SECRET_KEY,{expiresIn: expiresIn});
   }catch(err){
     console.error(`${errorMessages.TokenGenerationError}`,err.message);
   }

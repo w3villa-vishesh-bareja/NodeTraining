@@ -2,7 +2,7 @@ import nodemailer from "nodemailer";
 import dotenv from 'dotenv';
 import { MAIL_OPTIONS } from "../config/appConstants.js";
 dotenv.config();
-async function mailer(email ,token , type) {
+async function mailer(email ,token , type=MAIL_OPTIONS.VERIFY_EMAIL) {
 let mailOptions;
   const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -26,8 +26,6 @@ let mailOptions;
   }
 
 }
-
-
   try {
     const info = await transporter.sendMail(mailOptions);
     console.log("Email sent:", info.response);

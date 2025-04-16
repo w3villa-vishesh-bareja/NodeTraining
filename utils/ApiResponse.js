@@ -3,8 +3,8 @@ class ApiResponse {
     {
       this.statusCode = statusCode;
       this.success = success,
-        this.message = message || "successful hit",
-        this.data = data || [];
+      this.message = message || "successful hit",
+      this.data = data || [];
     }
   }
 }

@@ -1,8 +1,8 @@
 //this file will include apis for full registeration process and verifications 
-
 import pool, {
     hash,
     genTokenForVerification,
+    genToken,
   } from "../config/dbService.js";
 import joi from "joi";
 import nativeQueries from "../nativequeries/nativeQueries.json" assert { type: "json" };
@@ -29,48 +29,39 @@ const phoneSchema = joi.object({
 const mergedSchema = passwordSchmea.concat(emailSchema);
 
 const nameSchema = joi.object({
-    username: joi.string().min(3).pattern(/^[a-zA-Z0-9_@]+$/).message({'string.pattern.base': 'Username can only contain letters, numbers, _ and @',}).required(),
-    firstname: joi.string().pattern(/^[a-zA-Z0-9_@]+$/).min(3).required(),
-    lastname: joi.string().pattern(/^[a-zA-Z0-9_@]+$/).required(),
+    username: joi.string().min(3).pattern(/^[a-zA-Z0-9_@ ]+$/).message({'string.pattern.base': 'Username can only contain letters, numbers, _ and @',}).required(),
+    firstname: joi.string().pattern(/^[a-zA-Z0-9_@ ]+$/).min(3).required(),
+    lastname: joi.string().pattern(/^[a-zA-Z0-9_@ ]+$/).required(),
     email: joi.string().email().required()
 });
 
 export const registerEmail = async(req,res , next)=>{
-    const {error} = emailSchema.validate(req.body);
+    const {error} = mergedSchema.validate(req.body);
     if(error){
         logger.warn({ message: "Validation error during registration", validationError: error.message });
         return next(new ApiError(400, errorMessages.validationError, [error.message]));
     }
 
-    const {email} = req.body;
+    const {email, password} = req.body;
 
     try {
+        const hashedPassword = await hash(password);
         //check if user is present in db 
         const [existingUser] = await pool.query(nativeQueries.getUser, [email,null,null]);
-        const user =  existingUser[0];
-        if(existingUser.length > 0){ 
-            //check if "register_complete is false or true"
-            if(user.register_complete == 1){
-                //if true
-                logger.warn({ message: "Registration failed: User already exists", email });
-                return next(new ApiError(409 ,errorMessages.userExists ,[{user:{unique_id:user.unique_id}}]))
-            }else if (user.register_complete == 0){
-                //if registeration is incomplete return next_action to frontend
-                if(user.next_action == NEXT_ACTIONS.EMAIL_VERIFICATION){
-                    const connection = await pool.getConnection();
-                    const token = await genTokenForVerification(user.email)
-                    res.locals.data = await updateToken(user.unique_id, token , user.email, connection)
-                    next();
-                }
-                res.locals.data = new ApiResponse (200, true ,"User exists Check for next_action" , [{next_action:user.next_action , user: {email:email,id:user.unique_id}} ]);
-                next()
-            }
-        }else{
-            //enter email into the users table , set next_action to "EMAIL_VERIFICATION"
-            const connection = await pool.getConnection();
-            res.locals.data = await registerNewUser(email , connection , next);
-            return next();
+        if(existingUser.length > 0 && existingUser[0].email_verified == 1){
+            next(new ApiError(409 , true , errorMessages.userExists));
         }
+        else if(existingUser.length > 0 && existingUser[0].email_verified == 0){ 
+            const connection = await pool.getConnection();
+            const token = await genTokenForVerification({email:email , password:hashedPassword})
+            res.locals.data = await updateToken(existingUser[0].unique_id, token , existingUser[0].email, connection)
+            return next();
+        }else if(existingUser.length > 0 && existingUser[0].next_action != NEXT_ACTIONS.EMAIL_VERIFICATION){
+            return next(new ApiError(409 , errorMessages.userExists));
+        }
+        const connection = await pool.getConnection();
+        res.locals.data = await registerNewUser(email , hashedPassword ,  connection , next);
+        return next();
     } catch (error) {
         console.error(error);
         return next(new ApiError(500 , error.message));
@@ -79,14 +70,13 @@ export const registerEmail = async(req,res , next)=>{
 
 export async function emailVerification(req,res,next){
     // const {email} = req.body;
-    const {token} = req.user;
-    const{error} = mergedSchema.validate(req.body);
+    const {token , password} = req.user;
+    const{error} = emailSchema.validate(req.body);
     if(error){
         logger.warn({ message: "Validation error during registration", validationError: error.message });
         return next(new ApiError(400, errorMessages.validationError, [error.message]));
     }
-
-    const{email  , password} = req.body;
+    const { email } = req.body;
     //get info on expiry dates
     const[result] = await pool.query(nativeQueries.getFromVerification , [token]);
     console.log(result);
@@ -104,22 +94,20 @@ export async function emailVerification(req,res,next){
             new Date(user.expires_at) > new Date(Date.now())
         ){
             const connection = await pool.getConnection();
-            //hash the password 
-            const hashedPassword = await hash(password);
-            res.locals.data = await verifyUser(user.user_id ,email , hashedPassword, connection );
+            res.locals.data = await verifyUser(user.user_id ,email , password, connection );
             next();
         }else if(
         user.isVerified == false &&
         new Date(user.expires_at) < new Date(Date.now())
         ){
-            const token = await genTokenForVerification(email);
+            const token = await genTokenForVerification({email:email,  password:password});
             const connection = await pool.getConnection();
             res.locals.data = await updateToken(user.user_id, token, email, connection)
             next();
         }
     }else{
         // return res.status(400).json({messsage:"invalid token"})
-        return next(new ApiError(400,))
+        return next(new ApiError(400, "invalid token"))
 
     }
         
@@ -168,7 +156,7 @@ export async function sendOtp(req,res,next){
         for (let index = 0; index < 4; index++) {
           OTP += digits[Math.floor(Math.random() * 10)];
         }
-        const [result] = await connection.query(nativeQueries.getOtpVerificationStatus,[number])
+        const [result] = await connection.query(nativeQueries.getOtpVerificationStatus,[unique_id])
         const user = result[0];
         if(result.length > 0){
             //check if verified
@@ -182,7 +170,7 @@ export async function sendOtp(req,res,next){
                 console.log(OTP)
                 //if status is not verified , update otp
                 res.locals.data = await updateInOtp(unique_id, OTP , number ,connection, next);
-                next()
+                next(w3villa)
             }
         }else{
             console.log(OTP)
@@ -257,7 +245,7 @@ export async function createProfile(req,res,next){
         if(result.affectedRows== 0){
             return next(new ApiError(404) , errorMessages.userNotFound);
         }
-        res.locals.data =new ApiResponse(200 , true, successMessages.profileCreated , [{user:{email:email , username:username , firstname:firstname , lastname:lastname }}]);
+        res.locals.data =new ApiResponse(200 , true, successMessages.profileCreated , [{user:{email:email , username:username , firstname:firstname , lastname:lastname , next_action:NEXT_ACTIONS.UPLOAD_PROFILE_PHOTO }}]);
         next();
     } catch (error) {
         console.error(error);
@@ -273,11 +261,11 @@ export async function uploadProfilePhoto(req, res, next) {
       }
   
       let imageUrl;
-      imageUrl = await generateImageUrl(req, email);
+      imageUrl = await generateImageUrl(req, email , next);
       const [updateResult] = await pool.query(nativeQueries.updateProfileImage, [imageUrl, NEXT_ACTIONS.NONE, email]);
-
-      res.locals.data = new ApiResponse(200 , true , "Profile uploaded" , [{user:{imageUrl:imageUrl} , next_action: NEXT_ACTIONS.NONE}])
-      next();
+      const token = genTokenForVerification(email)
+      res.locals.data = new ApiResponse(200 , true , "Profile uploaded" , [{user:{imageUrl:imageUrl , token:token ,  next_action: NEXT_ACTIONS.NONE}}])
+      next() 
     } catch (err) {
       console.error(err);
       return res.status(500).json({ message: 'Upload failed', error: err.message });

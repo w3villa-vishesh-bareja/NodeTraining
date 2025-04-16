@@ -49,5 +49,7 @@
 
   "pendingRegistrationSteps" :"User registration not complete. Cannot proceed with phone verification.",
 
-  "sessionExpired" : "Session expired"
+  "sessionExpired" : "Session expired",
+
+  "BadRquest" : "Bad request"
 }
