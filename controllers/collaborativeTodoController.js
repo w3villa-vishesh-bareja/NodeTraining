@@ -4,11 +4,15 @@ import nativeQueries from "../nativequeries/nativeQueries.json" assert { type: "
 import errorMessages from "../config/errorMessages.json" assert { type: "json" };
 import successMessages from "../config/successMessages.json" assert { type: "json" };
 import responseHandler from "../handler/responseHandler.js";
-import { frameguard } from "helmet";
 import { ensureCollaborativeProject, ensureProjectOwner } from "../handler/projectHandler.js";
-
+import {inviteUserSchema , fetchInvitationsSchema , acceptNotificationSchema} from "../validators/collabProject.validator.js"
 //socket use
 export async function inviteUsers(req,res,next){
+    const {error} = inviteUserSchema.validate(req.body)
+    if(error){
+        console.log(error)
+        return next(new ApiError(400,errorMessages.validationError))
+    }
     const {userId , receiverId , projectId} = req.body;
     try {
         await ensureCollaborativeProject(projectId);
@@ -22,6 +26,11 @@ export async function inviteUsers(req,res,next){
 }
 
 export async function fetchInvitations(req,res,next){
+    const {error} = fetchInvitationsSchema.validate(req.body)
+    if(error){
+        console.log(error)
+        return next(new ApiError(400,errorMessages.validationError))
+    }
     const {userId} = req.body;
     try {
         const invitations =  await pool.query(nativeQueries.fetchInviations,[userId]);
@@ -34,6 +43,11 @@ export async function fetchInvitations(req,res,next){
 }
 
 export async function acceptNotification(req,res,next){
+    const {error} = acceptNotificationSchema.validate(req.body)
+    if(error){
+        console.log(error)
+        return next(new ApiError(400,errorMessages.validationError))
+    }
     const {userId , projectId} = req.body;
     const connection = await pool.getConnection();
 
@@ -57,7 +71,7 @@ export async function acceptNotification(req,res,next){
         } catch (error) {
             console.log(error);
             await connection.rollback();
-            await connection.release()
+            connection.release()
             return next(new ApiError(500,"error in while accepting Notification" + error));
         }
     } catch (error){
@@ -66,6 +80,4 @@ export async function acceptNotification(req,res,next){
     }
 }
 
-export async function setUserPermission(req,res,next){
-    
-}
+

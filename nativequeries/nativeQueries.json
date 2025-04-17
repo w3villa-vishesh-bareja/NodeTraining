@@ -91,5 +91,15 @@
 
     "getAcceptedStatus" : "SELECT is_accepted from invitations where invitation_to = ?",
 
-    "addUserLevel":"INSERT INTO project_members (user_id ,project_id) VALUES (?, ?)"
+    "addUserLevel":"INSERT INTO project_members (user_id ,project_id) VALUES (?, ?)",
+
+    "checkUserAndId":"SELECT * FROM projects WHERE unique_id= ?",
+
+    "getUserDetails": "SELECT  u.id, u.name, u.email, pm.role, pm.joined_at FROM project_members pm JOIN users u ON pm.user_id = u.id WHERE pm.project_id = ?",
+
+    "getTasksForProject" : "SELECT * FROM tasks WHERE project_id = ?",
+
+    "searchUser" : "SELECT *"
+
+    
 }
