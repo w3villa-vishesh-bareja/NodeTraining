@@ -2,7 +2,7 @@ import { verifyToken } from "../config/dbService.js";
 
 export const verifyJwt = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
-  
+
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res
       .status(401)
@@ -11,7 +11,7 @@ export const verifyJwt = async (req, res, next) => {
 
   try {
     const token = authHeader.split(" ")[1];
-
+    console.log(token)
     if (!token) {
       return res.status(400).json({ message: "Bad request: Token is missing" });
     }

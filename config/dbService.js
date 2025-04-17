@@ -46,7 +46,7 @@ export async function compare(EnteredPassword , UserPassword){
 
 export async function genToken(id,name,email){
   try{
-    return await jwt.sign({id,name,email},process.env.JWT_SECRET_KEY,{expiresIn: '1h'});
+    return  jwt.sign({id,name,email},process.env.JWT_SECRET_KEY,{expiresIn: '1h'});
   }catch(err){
     console.error(`${errorMessages.TokenGenerationError}`,err.message);
   }
@@ -64,10 +64,11 @@ export async function genTokenForVerification(payload , expiresIn='1h'){
 
 export async function verifyToken(token){
   try{
-    const decoded =  await jwt.verify(token,process.env.JWT_SECRET_KEY);
+    const decoded =  jwt.verify(token,process.env.JWT_SECRET_KEY);
+    console.log(decoded)
     return decoded;
   }catch(err){
-    console.error(`${errorMessages.TokenVerificationError}`, err.message)
+    console.error(`${errorMessages.TokenVerificationError}`+ err)
     return null;
   }
 }

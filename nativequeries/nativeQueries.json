@@ -61,8 +61,35 @@
 
     "updateProfileImage": "UPDATE users SET profile_image_url =? , next_action = ? , register_complete = true WHERE email = ?",
 
-    "getProfile":"SELECT name , firstname , lastname , phone_number , email , unique_id , profile_image_url From users WHERE unique_id= ? OR email = ?" ,
+    "getProfile":"SELECT id ,name , firstname , lastname , phone_number , email , unique_id , profile_image_url From users WHERE unique_id= ? OR email = ?" ,
 
-    "checkName" : "SELECT name FROM users WHERE name LIKE ?"
+    "checkName" : "SELECT name FROM users WHERE name LIKE ?",
 
+    "createSimpleTask" : "INSERT INTO tasks (title , created_by , deadline , description , type , unique_id) VALUES (?, ?, ?, ?, ?, UUID())",
+
+    "deleteSimpleTaskSingle" : "DELETE FROM tasks WHERE id = ? AND created_by = ? AND type = ?",
+
+    "getSimpleTasks" : "SELECT * FROM tasks WHERE created_by = ? AND type = ?",
+
+    "createProject": "INSERT INTO projects (name , type , owner , description , deadline , unique_id) VALUES (?, ?, ?, ?, ?, UUID())",
+
+    "insertInProjectMember":"INSERT INTO project_members (project_id,user_id , role) VALUES(?,?,?)",
+
+    "createInvitation":"INSERT INTO invitations(invited_by , invitation_to , project_id) VALUES (?, ?, ?)",
+
+    "fetchInviations": "SELECT * FROM invitations WHERE invitation_to = ?",
+
+    "acceptNotifications" : "UPDATE invitations SET is_accepted = true WHERE invitation_to= ?",
+
+    "addUserInProject" : "UPDATE projects SET users = JSON_ARRAY_APPEND(users, '$',  CAST(? AS UNSIGNED)) WHERE id = ? ",
+
+    "getProjectType" : "SELECT type FROM projects WHERE id = ?",
+
+    "getUserRole" : "SELECT role from project_members WHERE project_id = ? AND user_id = ?",
+
+    "getProjects" : "select p.unique_id, p.name, p.owner, pm.role, p.deadline, p.description, p.is_extended ,p.is_early, p.type , p.status from project_members pm JOIN projects p ON pm.project_id = p.id WHERE pm.user_id = ?",
+
+    "getAcceptedStatus" : "SELECT is_accepted from invitations where invitation_to = ?",
+
+    "addUserLevel":"INSERT INTO project_members (user_id ,project_id) VALUES (?, ?)"
 }

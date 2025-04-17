@@ -117,7 +117,8 @@ export const login = async (req, res , next ) => {
             id: user.id,
             name: user.name,
             email: user.email,
-            next_action:users[0].next_action
+            next_action:users[0].next_action,
+            unique_id:users[0].unique_id
           },
           token: token,
         },
@@ -228,11 +229,14 @@ export async function forgotPassword(req,res,next){
 }
 
 export async function getUser(req,res,next){
-  const {email} = req.user;
-  if(!email){
+  let {email , unique_id} = req.user;
+  if(!email && !unique_id){
     return next(new ApiError(400 , errorMessages.BadRquest));
   }
-  const [result] = await pool.query(nativeQueries.getProfile , [null,email]);
+  if(!email) email = null 
+  if(!unique_id) unique_id = null
+  
+  const [result] = await pool.query(nativeQueries.getProfile , [unique_id,email]);
   if(!result.length>0){
     return next(new ApiError(400 , errorMessages.userNotFound));
   }
