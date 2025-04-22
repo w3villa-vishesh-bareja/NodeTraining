@@ -61,7 +61,7 @@
 
     "updateProfileImage": "UPDATE users SET profile_image_url =? , next_action = ? , register_complete = true WHERE email = ?",
 
-    "getProfile":"SELECT id ,name , firstname , lastname , phone_number , email , unique_id , profile_image_url From users WHERE unique_id= ? OR email = ?" ,
+    "getProfile":"SELECT id ,name , firstname , lastname , phone_number , email , unique_id , profile_image_url , tier From users WHERE unique_id= ? OR email = ?" ,
 
     "checkName" : "SELECT name FROM users WHERE name LIKE ?",
 
@@ -95,11 +95,10 @@
 
     "checkUserAndId":"SELECT * FROM projects WHERE unique_id= ?",
 
-    "getUserDetails": "SELECT  u.id, u.name, u.email, pm.role, pm.joined_at FROM project_members pm JOIN users u ON pm.user_id = u.id WHERE pm.project_id = ?",
+    "getUserDetails": "SELECT  u.id, u.name, u.email, u.tier, pm.role, pm.joined_at FROM project_members pm JOIN users u ON pm.user_id = u.id WHERE pm.project_id = ?",
 
     "getTasksForProject" : "SELECT * FROM tasks WHERE project_id = ?",
 
-    "searchUser" : "SELECT *"
+    "updateUserSubscription": "UPDATE users SET tier = ? WHERE id = ?"
 
-    
 }

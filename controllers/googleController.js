@@ -95,6 +95,7 @@ export const handleGoogleCallback = async (req, res) => {
   }
   const user = req.user;
   const token = await genToken(user.id, user.name, user.email);
+  console.log("user in callback", token);
   res
     .cookie("token", token, {
       httpOnly: false,

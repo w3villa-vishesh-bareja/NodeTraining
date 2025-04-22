@@ -9,6 +9,7 @@ import googleRoutes from './routes/googleRoute.js'
 import profileRoutes from './routes/profileRoute.js'
 import todoRoutes from "./routes/todoRoutes.js"
 import projectRoutes from "./routes/projectRoute.js"
+import paymentsRoutes from './routes/payments.js'
 import errorHandler from './middleware/errorMiddlewre.js'
 import responseMiddleware from './middleware/responseMiddleware.js'
 import fileUpload from 'express-fileupload'
@@ -41,6 +42,7 @@ app.use('/user',profileRoutes , responseMiddleware);
 app.use('/task', todoRoutes );
 app.use('/project', projectRoutes )
 app.use('/',googleRoutes);
+app.use('/payments', paymentsRoutes);
 
 
 app.use(errorHandler);

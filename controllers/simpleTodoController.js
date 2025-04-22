@@ -14,11 +14,7 @@ import responseHandler from "../handler/responseHandler.js";
 // Protected routes
 
 export async function createSimpleTask(req, res, next) {
-  //  required -  title , userID (for created_by)
-  //  optionoal - deadline , description
-  //  auto-set - status- todo , created_at
-  //  to-set - created_by , type - simple
-  //  null fields - project_id , parent_task_id , assigned_to
+ 
   const { error } = createSimpleTaskSchema.validate(req.body);
   if (error) {
     return next(new ApiError(400, errorMessages.validationError));
@@ -52,10 +48,6 @@ export async function createSimpleTask(req, res, next) {
 }
 
 export async function editSimpleTask(req, res, next) {
-  //  required -  task_id , userID
-  //  optionoal - deadline , description , status
-  //  auto-set - status- todo , updated_at
-  //  to-set - updated content
 
   const { error } = editSimpleTaskSchema.validate(req.body);
   if (error) {
