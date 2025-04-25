@@ -2,7 +2,6 @@ import pool from "../config/dbService.js";
 import { ApiError } from "../utils/ApiError.js";
 import nativeQueries from "../nativequeries/nativeQueries.json" assert { type: "json" };
 import errorMessages from "../config/errorMessages.json" assert { type: "json" };
-import successMessages from "../config/successMessages.json" assert { type: "json" };
 import {
   createSimpleTaskSchema,
   editSimpleTaskSchema,
@@ -127,7 +126,6 @@ export async function deleteSimpleTaskSingle(req, res, next) {
   }
 }
 export async function getSimpleTasks(req, res, next) {
-  //required - userId , type , taskId
   console.log("body",req.body)
   const { error } = getSimpleTaskSchema.validate(req.body);
   if (error) {

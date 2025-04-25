@@ -10,5 +10,5 @@ router.get('/fetchInvitations',fetchInvitations);
 router.post('/acceptInvitation',acceptNotification);
 router.post('/getAllProjects',getAllProjects);
 router.post('/getProjectDetails' , getProjectDetails);
-router.get('/searchUsers',searchUsers);
+router.get('/searchUser',searchUsers);
 export default router;

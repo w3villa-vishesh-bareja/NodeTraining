@@ -17,3 +17,9 @@ export const acceptNotificationSchema = Joi.object({
   userId: Joi.number().integer().required(),
   projectId: Joi.number().integer().required()
 });
+
+export const changeStatusSchema = Joi.object({
+  userId: Joi.number().integer().required(),
+  projectId: Joi.number().integer().required(),
+  status: Joi.string().valid('completed', 'in-progress', 'todo').required()
+})

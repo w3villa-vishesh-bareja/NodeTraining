@@ -10,5 +10,15 @@ const MAIL_OPTIONS={
     VERIFY_EMAIL : "VERIFY_EMAIL",
     RESET_PASSWORD: "RESET_PASSWORD"
 }
+const TIER = {
+    TIER1 : "TIER_1",
+    TIER2 : "TIER_2",   
+    TIER3 : "TIER_3",
+}
+const TASK_TYPE = {
+    SIMPLE:'simple',
+    GROUP:'group',
+    COLLABORATIVE:'collaborative',
+}
 
-export {NEXT_ACTIONS , MAIL_OPTIONS}
+export {NEXT_ACTIONS , MAIL_OPTIONS, TIER, TASK_TYPE}

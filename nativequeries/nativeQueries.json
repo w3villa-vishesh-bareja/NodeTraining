@@ -63,7 +63,7 @@
 
     "getProfile":"SELECT id ,name , firstname , lastname , phone_number , email , unique_id , profile_image_url , tier From users WHERE unique_id= ? OR email = ?" ,
 
-    "checkName" : "SELECT name FROM users WHERE name LIKE ?",
+    "checkName" : "SELECT name, id FROM users WHERE name LIKE ?",
 
     "createSimpleTask" : "INSERT INTO tasks (title , created_by , deadline , description , type , unique_id) VALUES (?, ?, ?, ?, ?, UUID())",
 
@@ -77,28 +77,47 @@
 
     "createInvitation":"INSERT INTO invitations(invited_by , invitation_to , project_id) VALUES (?, ?, ?)",
 
-    "fetchInviations": "SELECT * FROM invitations WHERE invitation_to = ?",
+    "fetchInviations": "SELECT * FROM invitations WHERE invitation_to = ? AND is_accepted = false",
 
-    "acceptNotifications" : "UPDATE invitations SET is_accepted = true WHERE invitation_to= ?",
+    "acceptNotifications" : "UPDATE invitations SET is_accepted = true WHERE invitation_to= ? AND project_id = ?",
 
-    "addUserInProject" : "UPDATE projects SET users = JSON_ARRAY_APPEND(users, '$',  CAST(? AS UNSIGNED)) WHERE id = ? ",
-
+"addUserInProject": "UPDATE projects SET users = IF(users IS NULL OR users = 'null' OR users = '[]', JSON_ARRAY(?), JSON_ARRAY_APPEND(users, '$', ?)) WHERE id = ?",
     "getProjectType" : "SELECT type FROM projects WHERE id = ?",
 
     "getUserRole" : "SELECT role from project_members WHERE project_id = ? AND user_id = ?",
 
     "getProjects" : "select p.unique_id, p.name, p.owner, pm.role, p.deadline, p.description, p.is_extended ,p.is_early, p.type , p.status from project_members pm JOIN projects p ON pm.project_id = p.id WHERE pm.user_id = ?",
 
-    "getAcceptedStatus" : "SELECT is_accepted from invitations where invitation_to = ?",
+    "getAcceptedStatus" : "SELECT is_accepted from invitations where invitation_to = ? AND project_id = ?",
 
     "addUserLevel":"INSERT INTO project_members (user_id ,project_id) VALUES (?, ?)",
 
     "checkUserAndId":"SELECT * FROM projects WHERE unique_id= ?",
 
-    "getUserDetails": "SELECT  u.id, u.name, u.email, u.tier, pm.role, pm.joined_at FROM project_members pm JOIN users u ON pm.user_id = u.id WHERE pm.project_id = ?",
+    "getUserDetails": "SELECT  u.id, u.name, u.email, u.tier, u.profile_image_url, pm.role, pm.joined_at FROM project_members pm JOIN users u ON pm.user_id = u.id WHERE pm.project_id = ?",
 
     "getTasksForProject" : "SELECT * FROM tasks WHERE project_id = ?",
 
-    "updateUserSubscription": "UPDATE users SET tier = ? WHERE id = ?"
+    "updateUserSubscription": "UPDATE users SET tier = ? WHERE id = ?",
+
+    "checkTier": "SELECT tier FROM users WHERE id = ?",
+
+    "createProjectTask": "INSERT INTO tasks (title , created_by , deadline , description , type , project_id , assigned_to, unique_id) VALUES (?, ?, ?, ?, ?, ?, ?, UUID())",
+
+    "checkIfAssigned": "SELECT assigned_to FROM tasks WHERE id = ? ",
+
+    "changeStatus": "UPDATE tasks SET status = ? WHERE id = ?",
+
+    "getTasks": "SELECT * FROM tasks WHERE project_id = ? ",
+
+    "checkIfParent": "SELECT p.id, p.title FROM tasks as t JOIN tasks as p ON t.id = p.parent_task_id WHERE t.id = ?",
+
+    "deleteTask": "DELETE FROM tasks WHERE id = ?",
+
+    "changeAssignedUser": "UPDATE tasks SET assigned_to = ? WHERE id = ?",
+
+    "getProjectMembers": "SELECT * FROM project_members WHERE project_id = ?"
+
+
 
 }

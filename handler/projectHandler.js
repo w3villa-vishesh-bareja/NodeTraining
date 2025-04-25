@@ -30,3 +30,21 @@ export async function ensureProjectOwner(userId, project_id) {
         throw new ApiError(500, error);
     }
 }
+export async function taskCreator(userId, projectId, taskName, deadline, description, assigned, type) {
+    try {
+        const [taskCreator] = await pool.query(nativeQueries.createProjectTask, [
+            taskName,
+            userId,
+            deadline,
+            description,
+            type,
+            projectId,
+            JSON.stringify(assigned),
+            ]);
+        console.log(taskCreator);
+        return taskCreator.insertId;
+    } catch (error) {
+        console.error(error);
+        throw new ApiError(500, error);
+    }
+}
