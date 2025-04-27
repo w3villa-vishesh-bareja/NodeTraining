@@ -20,5 +20,10 @@ const TASK_TYPE = {
     GROUP:'group',
     COLLABORATIVE:'collaborative',
 }
+const USER_ROLE ={
+    OWNER:'owner',
+    MEMBER:'member',    
+    ADMIN:'admin',
+}
 
-export {NEXT_ACTIONS , MAIL_OPTIONS, TIER, TASK_TYPE}
+export {NEXT_ACTIONS , MAIL_OPTIONS, TIER, TASK_TYPE, USER_ROLE}

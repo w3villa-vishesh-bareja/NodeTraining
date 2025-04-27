@@ -1,55 +1,47 @@
 {
   "validationError": "Validation failed. Please check your input.",
-  
   "missingFields": "Some fields are missing",
-  
   "userExists": "User already exists. Please Login",
-
   "userNotFound": "User does not exist",
-  
   "registrationFailed": "Error during registration. Please try again later.",
-  
   "invalidCredentials": "Invalid username or password.",
-  
   "loginFailed": "Error during login. Please try again later.",
-  
   "internalServerError": "Internal server error. Please contact support.",
-  
   "hashingFailed": "Error in hashing password . Please try again",
-  
   "passwordCompareFailed": "Error in comparing passwords",
-  
   "TokenGenerationError": "Error in generating Jwt token",
-  
   "TokenVerificationError": "Error in verifying error",
-
-  "GoogleLoginError" : "Error in google Login",
-  
-  "selectVerificationMethod" : "Please select a verification method",
-
-  "incorrectVerificationMethod" : "incorrect Verification method",
-
+  "GoogleLoginError": "Error in google Login",
+  "selectVerificationMethod": "Please select a verification method",
+  "incorrectVerificationMethod": "incorrect Verification method",
   "actionMissing": "Action is missing",
-
   "invalidAction": "Invalid action. Must be either 'INSERT' or 'UPDATE'",
-
   "registerationSourceMissing": "Registeration source is required",
-
   "invalidRegistrationSource": "Invlaid Registeration source . Must be either 'Register' or 'EXISTING' ",
-
   "wrongOTP": "wrong OTP . Please make sure you enter a valid otp ",
-
   "expiredLink": "Verification link expired. A new verification email has been sent.",
-
   "expiredOtp": "Verification otp expired. please resend otp",
+  "nameExists": "This username alredy exists",
+  "numberExists": "This phone number already exists",
+  "pendingRegistrationSteps": "User registration not complete. Cannot proceed with phone verification.",
+  "sessionExpired": "Session expired",
+  "BadRquest": "Bad request",
+  "tierAuthorizationFailed": "The user does not have the required subscription tier.",
+  "deadlineInvalid": "Deadline cannot be before the current date.",
+  "projectCreationFailed": "Failed to create the project. Please try again later.",
+  "projectNotFound": "Project not found.",
+  "userNotInProject": "User is not a part of this project.",
+  "taskProcessingError": "Error while processing tasks for the project.",
+  "userSearchFailed": "Failed to search for users. Please try again later.",
+  "invalidTaskType": "Invalid task type.",
+  "noFieldsToUpdate": "No fields provided to update.",
+  "taskNotFoundOrUnauthorized": "Task not found or you're not authorized to perform this action.",
+  "notInvited": "You are not invited to this project.",
+  "invitationAlreadyAccepted": "Invitation already accepted.",
+  "noProjectMembers": "No members found in the project.",
+  "assignedUserNotMember": "Assigned user is not a member of the project.",
+  "invalidToken": "Invalid token."
   
-  "nameExists" : "This username alredy exists",
-
-  "numberExists" : "This phone number already exists",
-
-  "pendingRegistrationSteps" :"User registration not complete. Cannot proceed with phone verification.",
-
-  "sessionExpired" : "Session expired",
-
-  "BadRquest" : "Bad request"
+ 
+ 
 }

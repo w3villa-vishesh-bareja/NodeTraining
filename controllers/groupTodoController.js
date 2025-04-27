@@ -5,16 +5,13 @@ import errorMessages from "../config/errorMessages.json" assert { type: "json" }
 import successMessages from "../config/successMessages.json" assert { type: "json" };
 import responseHandler from "../handler/responseHandler.js";
 
-
-//get task is same as collab
-//create task is same as collab 
-
-
+// get task is same as collab
+// create task is same as collab
 
 export async function editGroupTask(req, res, next) {
-  const { taskId, userId, deadline, description, status ,type } = req.body;
-  if(type!= "group"){
-    return next(new ApiError(400, "Invalid task type"));
+  const { taskId, userId, deadline, description, status, type } = req.body;
+  if (type != "group") {
+    return next(new ApiError(400, errorMessages.invalidTaskType || "Invalid task type."));
   }
   const fieldsToUpdate = [];
   const values = [];
@@ -32,9 +29,9 @@ export async function editGroupTask(req, res, next) {
     values.push(status);
   }
   if (fieldsToUpdate.length === 0) {
-    return next(new ApiError(400, "No fields provided to update."));
+    return next(new ApiError(400, errorMessages.noFieldsToUpdate || "No fields provided to update."));
   }
-  values.push(taskId, userId , type);
+  values.push(taskId, userId, type);
 
   const sql = `
     UPDATE tasks
@@ -47,41 +44,52 @@ export async function editGroupTask(req, res, next) {
     console.log(result);
     if (result.affectedRows === 0) {
       return next(
-        new ApiError(404, "Task not found or you're not authorized to edit it.")
+        new ApiError(404, errorMessages.taskNotFoundOrUnauthorized)
       );
     }
     const [updatedRows] = await pool.execute(
       "SELECT * FROM tasks WHERE id = ?",
       [taskId]
     );
-    return responseHandler(200, true, "success", [updatedRows[0]], res);
+    return responseHandler(
+      200,
+      true,
+      successMessages.taskUpdated ,
+      [updatedRows[0]],
+      res
+    );
   } catch (err) {
     console.error("Error updating task:", err);
     return next(new ApiError(500, errorMessages.internalServerError));
   }
 }
 
-
 export async function deleteGroupTask(req, res, next) {
   const { taskId, userId, type } = req.body;
-  if(type!= "group"){
-    return next(new ApiError(400, "Invalid task type"));
+  if (type != "group") {
+    return next(new ApiError(400, errorMessages.invalidTaskType));
   }
   try {
     const [result] = await pool.query(nativeQueries.deleteSimpleTaskSingle, [
       taskId,
       userId,
-      type
+      type,
     ]);
     console.log(result);
     if (result.affectedRows === 0) {
       return next(
-        new ApiError(404, "Task not found or you're not authorized to edit it.")
+        new ApiError(404, errorMessages.taskNotFoundOrUnauthorized)
       );
     }
-    return responseHandler(200, true, "Task Deleted", [], res);
+    return responseHandler(
+      200,
+      true,
+      successMessages.taskDeleted ,
+      [],
+      res
+    );
   } catch (error) {
-    console.error("Error Deleting task:", err);
+    console.error("Error deleting task:", error);
     return next(new ApiError(500, errorMessages.internalServerError));
   }
 }

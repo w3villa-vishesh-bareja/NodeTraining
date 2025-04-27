@@ -1,18 +1,23 @@
 {
     "userRegistered": "User registered successfully.",
-    
     "loginSuccessful": "Login successful.",
-
     "emailSent": "Email sent . Please click verification link sent on your mail",
-
     "emailVerified": "Email verified",
-
     "otpSent": "OTP Sent",
-
-    "otpVerified":"OTP verified",
-
+    "otpVerified": "OTP verified",
     "profileCreated": "Profile created",
-
-    "userFound": "user found"
-    
+    "userFound": "user found",
+    "projectCreated": "Project created successfully.",
+    "projectsFetched": "Projects fetched successfully.",
+    "projectDetailsFetched": "Project details fetched successfully.",
+    "usersFetched": "Users fetched successfully.",
+    "taskUpdated": "Task updated successfully.",
+    "taskDeleted": "Task deleted successfully.",
+    "invitationSent": "Invitation sent successfully.",
+    "invitationsFetched": "Invitations fetched successfully.",
+    "invitationAccepted": "Invitation accepted successfully.",
+    "taskCreated": "Task created successfully.",
+    "tasksFetched": "Tasks fetched successfully.",
+    "priofileUpdated": "Profile updated successfully.",
+    "passwordEmailed": "Password reset email sent successfully."
 }
