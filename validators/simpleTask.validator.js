@@ -12,7 +12,7 @@ export const createSimpleTaskSchema = Joi.object({
 export const editSimpleTaskSchema = Joi.object({
   taskId: Joi.number().required(),
   userId: Joi.number().required(),
-  deadline: Joi.date().optional(),
+  deadline: Joi.date().allow(null).optional() ,
   description: Joi.string().optional(),
   type: Joi.string().valid('simple').required(),
   status: Joi.string().valid('todo', 'in-progress', 'completed', 'aborted', 'timed-out', 'extended').optional()

@@ -19,5 +19,6 @@
     "taskCreated": "Task created successfully.",
     "tasksFetched": "Tasks fetched successfully.",
     "priofileUpdated": "Profile updated successfully.",
-    "passwordEmailed": "Password reset email sent successfully."
+    "passwordEmailed": "Password reset email sent successfully.",
+    "projectDeleted": "Project deleted successfully."
 }

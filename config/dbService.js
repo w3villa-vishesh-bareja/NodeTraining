@@ -7,7 +7,7 @@ import errorMessages from './errorMessages.json' assert {type : 'json'}
 export const pool = mysql.createPool({
   host: "localhost",
   user: "root",
-  password: "root",
+  password: "password",
   database: "node_db",
   waitForConnections: true,
   connectionLimit: 100,

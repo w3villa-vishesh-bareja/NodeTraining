@@ -14,6 +14,7 @@ import responseHandler from "../handler/responseHandler.js";
 // Protected routes
 
 export async function createSimpleTask(req, res, next) {
+  console.log(req.body);
   const { error } = createSimpleTaskSchema.validate(req.body);
   if (error) {
     return next(new ApiError(400, errorMessages.validationError));
@@ -53,9 +54,11 @@ export async function createSimpleTask(req, res, next) {
 }
 
 export async function editSimpleTask(req, res, next) {
+  console.log(req.body);
   const { error } = editSimpleTaskSchema.validate(req.body);
   if (error) {
-    return next(new ApiError(400, errorMessages.validationError));
+    console.log("error", error);
+    return next(new ApiError(400, errorMessages.validationError ));
   }
   const { taskId, userId, deadline, description, status, type } = req.body;
 
@@ -171,6 +174,45 @@ export async function getSimpleTasks(req, res, next) {
     );
   } catch (error) {
     console.error("Error fetching tasks:", error);
+    return next(new ApiError(500, errorMessages.internalServerError));
+  }
+}
+
+export async function deleteMultipleSimpleTasks(req, res, next) {
+  // const { error } = deleteSimpleTaskSchema.validate(req.body);
+  // if (error) {
+  //   return next(new ApiError(400, errorMessages.validationError));
+  // }
+  console.log(req.body);
+
+  const { taskIds, userId, type } = req.body;
+
+  try {
+    const placeholder = taskIds.map((_,i)=> `?`).join(', ');
+    const sql = `
+      DELETE FROM tasks
+      WHERE id IN (${placeholder}) AND created_by = ? AND type = ?
+    `;
+    
+    const [result] = await pool.query(sql, [...taskIds, userId, type]);
+    console.log(result);
+    if (result.affectedRows === 0) {
+      return next(
+        new ApiError(
+          404,
+          errorMessages.taskNotFoundOrUnauthorized || "Task not found or you're not authorized to delete it."
+        )
+      );
+    }
+    return responseHandler(
+      200,
+      true,
+      successMessages.tasksDeleted || "Tasks deleted successfully.",
+      [taskIds],
+      res
+    );
+  } catch (error) {
+    console.error("Error deleting tasks:", error);
     return next(new ApiError(500, errorMessages.internalServerError));
   }
 }

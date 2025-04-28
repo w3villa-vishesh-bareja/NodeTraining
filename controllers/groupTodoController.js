@@ -64,6 +64,7 @@ export async function editGroupTask(req, res, next) {
   }
 }
 
+
 export async function deleteGroupTask(req, res, next) {
   const { taskId, userId, type } = req.body;
   if (type != "group") {

@@ -77,16 +77,16 @@
 
     "createInvitation":"INSERT INTO invitations(invited_by , invitation_to , project_id) VALUES (?, ?, ?)",
 
-    "fetchInviations": "SELECT * FROM invitations WHERE invitation_to = ? AND is_accepted = false",
+    "fetchInviations": "SELECT i.*, p.name FROM invitations i JOIN projects p ON i.project_id = p.id WHERE invitation_to = ? AND is_accepted = false",
 
     "acceptNotifications" : "UPDATE invitations SET is_accepted = true WHERE invitation_to= ? AND project_id = ?",
 
 "addUserInProject": "UPDATE projects SET users = IF(users IS NULL OR users = 'null' OR users = '[]', JSON_ARRAY(?), JSON_ARRAY_APPEND(users, '$', ?)) WHERE id = ?",
     "getProjectType" : "SELECT type FROM projects WHERE id = ?",
 
-    "getUserRole" : "SELECT role from project_members WHERE project_id = ? AND user_id = ?",
+    "getUserRole" : "SELECT pm.role from project_members pm JOIN projects p ON pm.project_id = p.id  WHERE unique_id = ? AND user_id = ?",
 
-    "getProjects" : "select p.unique_id, p.name, p.owner, pm.role, p.deadline, p.description, p.is_extended ,p.is_early, p.type , p.status from project_members pm JOIN projects p ON pm.project_id = p.id WHERE pm.user_id = ?",
+    "getProjects" : "SELECT p.unique_id, p.name, p.owner, pm.role, p.deadline, p.description, p.is_extended, p.is_early, p.type, p.status, u.name AS owner_name FROM project_members pm JOIN projects p ON pm.project_id = p.id JOIN users u ON p.owner = u.id WHERE pm.user_id = ?",
 
     "getAcceptedStatus" : "SELECT is_accepted from invitations where invitation_to = ? AND project_id = ?",
 
@@ -116,7 +116,13 @@
 
     "changeAssignedUser": "UPDATE tasks SET assigned_to = ? WHERE id = ?",
 
-    "getProjectMembers": "SELECT * FROM project_members WHERE project_id = ?"
+    "getProjectMembers": "SELECT * FROM project_members WHERE project_id = ?",
+
+    "deleteMultipleTasks": "DELETE FROM tasks WHERE id IN (?) AND created_by = ? AND type = ?",
+
+    "rejectInvitation": "UPDATE invitations SET is_accepted = false WHERE invitation_to= ? AND project_id = ?",
+
+    "deleteProject": "DELETE FROM projects WHERE unique_id = ?"
 
 
 

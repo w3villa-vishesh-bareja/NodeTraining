@@ -40,7 +40,9 @@
   "invitationAlreadyAccepted": "Invitation already accepted.",
   "noProjectMembers": "No members found in the project.",
   "assignedUserNotMember": "Assigned user is not a member of the project.",
-  "invalidToken": "Invalid token."
+  "invalidToken": "Invalid token.",
+  "invitationNotFound": "Invitation not found.",
+  "inviteSelf": "You cannot invite yourself."
   
  
  

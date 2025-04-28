@@ -17,6 +17,9 @@ export async function inviteUsers(req,res,next){
         return next(new ApiError(400,errorMessages.validationError))
     }
     const {userId , receiverId , projectId} = req.body;
+    if(userId == receiverId){
+        return next(new ApiError(400 , errorMessages.inviteSelf))
+    }
     try {
         await ensureCollaborativeProject(projectId);
         await ensureProjectOwner(userId , projectId);
@@ -33,6 +36,7 @@ export async function inviteUsers(req,res,next){
 }
 
 export async function fetchInvitations(req,res,next){
+    console.log(req.body)
     const {error} = fetchInvitationsSchema.validate(req.body)
     if(error){
         console.log(error)
@@ -86,10 +90,34 @@ export async function acceptNotification(req, res, next) {
         return next(new ApiError(500, errorMessages.internalServerError ));
     }
 }
+export async function rejectNotification(req, res, next) {
+    const {error} = acceptNotificationSchema.validate(req.body);
+    if(error) {
+        console.log(error);
+        return next(new ApiError(400, errorMessages.validationError));
+    }
+    const {userId, projectId} = req.body;
+    try {
+        const [isAccepted] = await pool.query(nativeQueries.getAcceptedStatus, [userId, projectId]);
+        if(isAccepted.length == 0) {
+            return next(new ApiError(400, errorMessages.invitationNotFound));
+        }
+        if(isAccepted[0].is_accepted) {
+            return next(new ApiError(409, errorMessages.invitationAlreadyAccepted));
+        }
+        await pool.query(nativeQueries.rejectInvitation, [userId, projectId]);
+        return responseHandler(200, true, sucessMessages.invitationAccepted, [{projectId: projectId}], res);
+    } catch (error) {
+        console.log(error);
+        return next(new ApiError(500, errorMessages.internalServerError ));
+    }
+}
 
 export async function createTask(req,res,next){   
+    console.log(req.body)
     const {error} = createTaskSchema.validate(req.body);
     if(error){
+        console.log(error);
         return next(new ApiError(400,errorMessages.validationError));
     }
     
@@ -99,16 +127,23 @@ export async function createTask(req,res,next){
     if(!assigned_to){
         assigned_to = null
     }
+    const [userType] = await pool.query(nativeQueries.getUserRole, [projectId, userId]);
+    if (!userType || userType.length === 0) {
+        return next(new ApiError(400, errorMessages.userNotInProject));
+    }
+    if (userType[0].role !== USER_ROLE.OWNER && userType[0].role !== USER_ROLE.ADMIN) {
+        return next( new ApiError(400, "This action is only allowed for project owner or admin"));
+    }
     if(assigned_to){
         try {
             const [members] = await pool.query(nativeQueries.getProjectMembers, [projectId]);
-            if (!members || members.length === 0) {
+            if (!members || members.length === 0) {    // if project does not have any members
                 throw new ApiError(400, errorMessages.noMembersFound);
             }
             const isMember = members.some(member => member.user_id === assigned_to[0]);
-            if (!isMember) {
+            if (!isMember) {   // if assigned user is not a member of the project
                 throw new ApiError(400, errorMessages.assignedUserNotMember);
-            }
+            }       
         } catch (error) {
             console.error(error);
             return next(new ApiError(500, error));
@@ -117,6 +152,10 @@ export async function createTask(req,res,next){
     try {
         if(type == TASK_TYPE.GROUP){
             const isAuthorised = await tierCheckHandler(userId , 2);
+            const isgroupProject = await pool.query(nativeQueries.getProjectType , [projectId]);
+            if(isgroupProject[0][0].type != TASK_TYPE.GROUP){
+                return next(new ApiError(400 , errorMessages.invalidTaskType));
+            }
             if(!isAuthorised){
                 return next(new ApiError(403 , errorMessages.tierAuthorizationFailed));
             }
@@ -194,7 +233,7 @@ export async function changeAssignedTo(req, res, next) {
 
             const currentAssignedUsers = JSON.parse(currentAssignment[0].assigned_to || '[]');
             
-            if (!currentAssignedUsers.includes(userId)) {
+            if (currentAssignedUsers !== userId) {
                 throw new ApiError(400, "This action is only allowed for project owner, admin or assigned user");
             }
         }

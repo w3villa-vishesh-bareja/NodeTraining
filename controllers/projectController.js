@@ -184,3 +184,30 @@ export async function searchUsers(req, res, next) {
     return next(new ApiError(500, errorMessages.userSearchFailed));
   }
 }
+
+export async function deleteProject(req, res, next)  {
+  const {projectId, userId} = req.body;
+  try{
+    const [userType] = await pool.query(nativeQueries.getUserRole, [projectId, userId]);
+    if (!userType || userType.length === 0) {
+        return next(new ApiError(400, errorMessages.userNotInProject));
+    }
+    if (userType[0].role !== USER_ROLE.OWNER && userType[0].role !== USER_ROLE.ADMIN) {
+        return next( new ApiError(400, "This action is only allowed for project owner or admin"));
+    }
+    const [result] = await pool.query(nativeQueries.deleteProject, [projectId]);
+    if (result.affectedRows === 0) {
+      return next(new ApiError(404, errorMessages.projectNotFound));
+    }
+    return responseHandler(
+      200,
+      true,
+      successMessages.projectDeleted,
+      [],
+      res
+    );
+  }catch(error){
+    console.error(error);
+    return next(new ApiError(500, errorMessages.projectDeletionFailed));
+  }
+}
