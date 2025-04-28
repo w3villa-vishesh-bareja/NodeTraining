@@ -3,6 +3,7 @@ import nativeQueries from "../nativequeries/nativeQueries.json" assert { type: "
 import successMessages from "../config/successMessages.json" assert {type :"json"}
 import errorMessages from "../config/errorMessages.json" assert {type:"json"}
 import { ApiError } from "../utils/ApiError.js";
+import { USER_ROLE } from "../config/appConstants.js";
 
 
 export async function ensureCollaborativeProject(projectId){
@@ -22,7 +23,7 @@ export async function ensureProjectOwner(userId, project_id) {
             throw new ApiError(400, "This action is only allowed for project owner");
         }
 
-        if (userType[0].role !== "owner") {
+        if (userType[0].role !== USER_ROLE.OWNER) {
             throw new ApiError(400, "This action is only allowed for project owner");
         }
     } catch (error) {

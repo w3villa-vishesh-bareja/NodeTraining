@@ -136,7 +136,7 @@ export async function getProfile(req,res ,next) {
   try{
   const[user] = await pool.query(nativeQueries.getProfile,[id,null]);
   if(user.length <= 0){
-    return next(new ApiError(404 , "User not found"));
+    return next(new ApiError(404 , errorMessages.userNotFound));
   }
   const profile = user[0];
   res.locals.data = new ApiResponse(200 , true , "user found" , [profile]);
@@ -171,7 +171,7 @@ export async function updateProfile(req, res, next) {
   }
 
   if (filteredFields.length === 0) {
-    return next(new ApiError(400, "No valid fields provided for update"));
+    return next(new ApiError(400, errorMessages.noFieldsToUpdate));
   }
 
   try {
@@ -189,13 +189,13 @@ export async function updateProfile(req, res, next) {
     const [result] = await pool.query(query, values);
 
     if (result.affectedRows === 0) {
-      return next(new ApiError(404, "User not found or nothing updated"));
+      return next(new ApiError(404, errorMessages.userNotFound));
     }
 
     const [updatedUserRows] = await pool.query(nativeQueries.getProfile, [id , null]);
     const updatedUser = updatedUserRows[0];
 
-    res.locals.data = new ApiResponse(200, true, "Profile updated successfully", [updatedUser]);
+    res.locals.data = new ApiResponse(200, true, successMessages.profileUpdated, [updatedUser]);
     next();
   } catch (error) {
     console.error(error);
@@ -212,7 +212,6 @@ export async function forgotPassword(req,res,next){
 
   const {error} = emailSchema.validate(req.body);
   if (error) {
-    logger.warn({ message: "Validation error during registration", validationError: error.message });
     return next(new ApiError(400, errorMessages.validationError, [error.message]));
   }
 
@@ -224,7 +223,7 @@ export async function forgotPassword(req,res,next){
   const user = result[0];
   const token = await genTokenForVerification(email , '5m');
   await mailer(email , token);
-  res.locals.data = new ApiResponse(200 , true , "Password reset email sent , This email will be valid for 5 mins" ,[{user:{email}}])
+  res.locals.data = new ApiResponse(200 , true , successMessages.passwordEmailed ,[{user:{email}}])
   next();
 }
 
@@ -244,6 +243,7 @@ export async function getUser(req,res,next){
   res.locals.data  = new ApiResponse(200 , true , successMessages.userFound , [{user:user}])
   return next();
 }
+
 // export const sendEmail = async (req, res) => {
 //   const connection = await pool.getConnection();
 //   const { id, Action } = req.body;

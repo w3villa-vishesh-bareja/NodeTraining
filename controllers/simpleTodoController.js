@@ -2,6 +2,7 @@ import pool from "../config/dbService.js";
 import { ApiError } from "../utils/ApiError.js";
 import nativeQueries from "../nativequeries/nativeQueries.json" assert { type: "json" };
 import errorMessages from "../config/errorMessages.json" assert { type: "json" };
+import successMessages from "../config/successMessages.json" assert { type: "json" };
 import {
   createSimpleTaskSchema,
   editSimpleTaskSchema,
@@ -13,7 +14,6 @@ import responseHandler from "../handler/responseHandler.js";
 // Protected routes
 
 export async function createSimpleTask(req, res, next) {
- 
   const { error } = createSimpleTaskSchema.validate(req.body);
   if (error) {
     return next(new ApiError(400, errorMessages.validationError));
@@ -27,7 +27,7 @@ export async function createSimpleTask(req, res, next) {
   const created_by = userId;
   const type = "simple";
 
-  //create task
+  // Create task
   try {
     const result = await pool.query(nativeQueries.createSimpleTask, [
       title,
@@ -39,20 +39,25 @@ export async function createSimpleTask(req, res, next) {
     const [rows] = await pool.execute("SELECT * FROM tasks WHERE id = ?", [
       result[0].insertId,
     ]);
-    return responseHandler(200, true, "Task created", [rows[0]], res);
+    return responseHandler(
+      201,
+      true,
+      successMessages.taskCreated || "Task created successfully.",
+      [rows[0]],
+      res
+    );
   } catch (error) {
     console.error(error);
-    return next(new ApiError(500));
+    return next(new ApiError(500, errorMessages.internalServerError));
   }
 }
 
 export async function editSimpleTask(req, res, next) {
-
   const { error } = editSimpleTaskSchema.validate(req.body);
   if (error) {
     return next(new ApiError(400, errorMessages.validationError));
   }
-  const { taskId, userId, deadline, description, status ,type } = req.body;
+  const { taskId, userId, deadline, description, status, type } = req.body;
 
   const fieldsToUpdate = [];
   const values = [];
@@ -70,9 +75,11 @@ export async function editSimpleTask(req, res, next) {
     values.push(status);
   }
   if (fieldsToUpdate.length === 0) {
-    return next(new ApiError(400, "No fields provided to update."));
+    return next(
+      new ApiError(400, errorMessages.noFieldsToUpdate || "No fields provided to update.")
+    );
   }
-  values.push(taskId, userId , type);
+  values.push(taskId, userId, type);
 
   const sql = `
     UPDATE tasks
@@ -85,22 +92,30 @@ export async function editSimpleTask(req, res, next) {
     console.log(result);
     if (result.affectedRows === 0) {
       return next(
-        new ApiError(404, "Task not found or you're not authorized to edit it.")
+        new ApiError(
+          404,
+          errorMessages.taskNotFoundOrUnauthorized || "Task not found or you're not authorized to edit it."
+        )
       );
     }
     const [updatedRows] = await pool.execute(
       "SELECT * FROM tasks WHERE id = ?",
       [taskId]
     );
-    return responseHandler(200, true, "success", [updatedRows[0]], res);
+    return responseHandler(
+      200,
+      true,
+      successMessages.taskUpdated || "Task updated successfully.",
+      [updatedRows[0]],
+      res
+    );
   } catch (err) {
     console.error("Error updating task:", err);
     return next(new ApiError(500, errorMessages.internalServerError));
   }
 }
-export async function deleteSimpleTaskSingle(req, res, next) {
-  //required - userId , type , taskId
 
+export async function deleteSimpleTaskSingle(req, res, next) {
   const { error } = deleteSimpleTaskSchema.validate(req.body);
   if (error) {
     return next(new ApiError(400, errorMessages.validationError));
@@ -111,22 +126,32 @@ export async function deleteSimpleTaskSingle(req, res, next) {
     const [result] = await pool.query(nativeQueries.deleteSimpleTaskSingle, [
       taskId,
       userId,
-      type
+      type,
     ]);
     console.log(result);
     if (result.affectedRows === 0) {
       return next(
-        new ApiError(404, "Task not found or you're not authorized to edit it.")
+        new ApiError(
+          404,
+          errorMessages.taskNotFoundOrUnauthorized || "Task not found or you're not authorized to delete it."
+        )
       );
     }
-    return responseHandler(200, true, "Task Deleted", [], res);
+    return responseHandler(
+      200,
+      true,
+      successMessages.taskDeleted || "Task deleted successfully.",
+      [],
+      res
+    );
   } catch (error) {
-    console.error("Error Deleting task:", err);
+    console.error("Error deleting task:", error);
     return next(new ApiError(500, errorMessages.internalServerError));
   }
 }
+
 export async function getSimpleTasks(req, res, next) {
-  console.log("body",req.body)
+  console.log("body", req.body);
   const { error } = getSimpleTaskSchema.validate(req.body);
   if (error) {
     return next(new ApiError(400, errorMessages.validationError));
@@ -137,9 +162,15 @@ export async function getSimpleTasks(req, res, next) {
       userId,
       type,
     ]);
-    return responseHandler(200, true, "Tasks fetched", [result[0]], res);
+    return responseHandler(
+      200,
+      true,
+      successMessages.tasksFetched || "Tasks fetched successfully.",
+      [result[0]],
+      res
+    );
   } catch (error) {
-    console.error("Error Deleting task:", err);
+    console.error("Error fetching tasks:", error);
     return next(new ApiError(500, errorMessages.internalServerError));
   }
 }

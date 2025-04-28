@@ -10,88 +10,92 @@ import { genToken } from "../config/dbService.js";
 import ApiResponse from "../utils/ApiResponse.js";
 
 export async function findOrCreateUser(profile) {
-    try {
-      let result;
-      let username;
-      let nameSeach;
-      let email = profile.emails[0].value;
-      const userData = await redis.get(email);
-  
-      if (userData) {
-        return { redirect: true, email }; // tell Passport to redirect
-      }
-  
-      [result] = await pool.query(nativeQueries.getUser, [email, null, null]);
-  
-      if (result.length === 0) {
-        // email not found
-        [nameSeach] = await pool.query(nativeQueries.getUser, [
-          null,
-          null,
-          profile.displayName,
-        ]);
-  
-        const firstName = profile.name?.givenName;
-        const lastName = profile.name?.familyName;
-        username = profile.displayName;
-        const profilePhoto = profile.photos?.[0]?.value;
-  
-        if (nameSeach.length > 0) {
-          const userDetails = {
-            firstName,
-            lastName,
-            profilePhoto,
-          };
-          await redis.setEx(`${email}`, 600, JSON.stringify(userDetails));
-          return { redirect: true, email }; // again return redirect
-        }
+  try {
+    let result;
+    let username;
+    let nameSeach;
+    let email = profile.emails[0].value;
+    const userData = await redis.get(email);
 
-        const hashedPassword = await hash(generateRandomString());
-        let imageUrl;
-        if (profilePhoto) {
-          imageUrl = profilePhoto;
-        } else {
-          const name = `${firstName} + ${lastName}`;
-          imageUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-            name
-          )}&background=random&color=fff`;
-        }
-  
-        await pool.query(nativeQueries.createUserWithSocial, [
-          email,
-          hashedPassword,
-          1,
-          username,
+    if (userData) {
+      return { redirect: true, email }; // tell Passport to redirect
+    }
+
+    [result] = await pool.query(nativeQueries.getUser, [email, null, null]);
+
+    if (result.length === 0) {
+      // email not found
+      [nameSeach] = await pool.query(nativeQueries.getUser, [
+        null,
+        null,
+        profile.displayName,
+      ]);
+
+      const firstName = profile.name?.givenName;
+      const lastName = profile.name?.familyName;
+      username = profile.displayName;
+      const profilePhoto = profile.photos?.[0]?.value;
+
+      if (nameSeach.length > 0) {
+        const userDetails = {
           firstName,
           lastName,
-          imageUrl,
-          1,
-          NEXT_ACTIONS.NONE,
-        ]);
-  
-        result = await pool.query(nativeQueries.getUser, [
-          profile.emails[0].value,
-          null,
-          null,
-        ]);
-  
-        await pool.query(nativeQueries.addSocialUser, [
-          result[0][0].unique_id,
-          "Google",
-          profile.id,
-        ]);
+          profilePhoto,
+        };
+        await redis.setEx(`${email}`, 600, JSON.stringify(userDetails));
+        return { redirect: true, email }; // again return redirect
       }
-      return result[0]; 
-    } catch (err) {
-      console.error("Error in findOrCreateUser:", err);
-      throw err;
+
+      const hashedPassword = await hash(generateRandomString());
+      let imageUrl;
+      if (profilePhoto) {
+        imageUrl = profilePhoto;
+      } else {
+        const name = `${firstName} + ${lastName}`;
+        imageUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+          name
+        )}&background=random&color=fff`;
+      }
+
+      await pool.query(nativeQueries.createUserWithSocial, [
+        email,
+        hashedPassword,
+        1,
+        username,
+        firstName,
+        lastName,
+        imageUrl,
+        1,
+        NEXT_ACTIONS.NONE,
+      ]);
+
+      result = await pool.query(nativeQueries.getUser, [
+        profile.emails[0].value,
+        null,
+        null,
+      ]);
+
+      await pool.query(nativeQueries.addSocialUser, [
+        result[0][0].unique_id,
+        "Google",
+        profile.id,
+      ]);
     }
+    return result[0];
+  } catch (err) {
+    console.error("Error in findOrCreateUser:", err);
+    throw new ApiError(500, errorMessages.internalServerError);
   }
+}
 
 export const handleGoogleCallback = async (req, res) => {
   console.log("in callback");
-  if(req.user?.redirect){
-    return res.redirect(`http://localhost:5173/register/setUsername?email=${encodeURIComponent(req.user.email)}`);
+  if (req.user?.redirect) {
+    return res.redirect(
+      `http://localhost:5173/register/setUsername?email=${encodeURIComponent(
+        req.user.email
+      )}`
+    );
   }
   const user = req.user;
   const token = await genToken(user.id, user.name, user.email);
@@ -109,9 +113,9 @@ export const setUsername = async (req, res, next) => {
   try {
     const { username, email } = req.body;
     if (!username || !email) {
-      next(new ApiError(400, errorMessages.validationError));
+      return next(new ApiError(400, errorMessages.validationError));
     }
-    console.log(username , email)
+    console.log(username, email);
     await redis.expire(email, 600);
     const [results] = await pool.query(nativeQueries.checkName, [
       `${username}%`,
@@ -125,7 +129,7 @@ export const setUsername = async (req, res, next) => {
 
     const user = JSON.parse(await redis.get(email));
 
-    console.log(user)
+    console.log(user);
     if (!user) {
       return next(new ApiError(401, errorMessages.sessionExpired));
     }
@@ -143,16 +147,16 @@ export const setUsername = async (req, res, next) => {
       NEXT_ACTIONS.NONE,
     ]);
     await redis.del(email);
-    const token = await genTokenForVerification(email)
+    const token = await genTokenForVerification(email);
     res.locals.data = new ApiResponse(
       201,
       true,
       successMessages.userRegistered,
-      [{ user:user , token:token }]
+      [{ user: user, token: token }]
     );
     return next();
   } catch (error) {
     console.log(error);
-    next(new ApiError(500));
+    next(new ApiError(500, errorMessages.internalServerError));
   }
 };
