@@ -81,10 +81,11 @@
 
     "acceptNotifications" : "UPDATE invitations SET is_accepted = true WHERE invitation_to= ? AND project_id = ?",
 
-"addUserInProject": "UPDATE projects SET users = IF(users IS NULL OR users = 'null' OR users = '[]', JSON_ARRAY(?), JSON_ARRAY_APPEND(users, '$', ?)) WHERE id = ?",
-    "getProjectType" : "SELECT type FROM projects WHERE id = ?",
+    "addUserInProject": "UPDATE projects SET users = IF(users IS NULL OR users = 'null' OR users = '[]', JSON_ARRAY(?), JSON_ARRAY_APPEND(users, '$', ?)) WHERE id = ?",
 
-    "getUserRole" : "SELECT pm.role from project_members pm JOIN projects p ON pm.project_id = p.id  WHERE unique_id = ? AND user_id = ?",
+    "getProjectType" : "SELECT type, owner FROM projects WHERE id = ?",
+
+    "getUserRole" : "SELECT pm.role from project_members pm JOIN projects p ON pm.project_id = p.id  WHERE p.id = ? AND pm.user_id = ?",
 
     "getProjects" : "SELECT p.unique_id, p.name, p.owner, pm.role, p.deadline, p.description, p.is_extended, p.is_early, p.type, p.status, u.name AS owner_name FROM project_members pm JOIN projects p ON pm.project_id = p.id JOIN users u ON p.owner = u.id WHERE pm.user_id = ?",
 
@@ -122,7 +123,9 @@
 
     "rejectInvitation": "UPDATE invitations SET is_accepted = false WHERE invitation_to= ? AND project_id = ?",
 
-    "deleteProject": "DELETE FROM projects WHERE unique_id = ?"
+    "deleteProject": "DELETE FROM projects WHERE unique_id = ?",
+
+    "getGroupProject" : "SELECT * FROM projects WHERE owner = ? AND type = ?"
 
 
 

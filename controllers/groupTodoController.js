@@ -8,10 +8,42 @@ import responseHandler from "../handler/responseHandler.js";
 // get task is same as collab
 // create task is same as collab
 
+export async function getGroupProject(req,res,next){
+  const{userId , type} = req.body;
+  if (type != "group") {
+    return next(new ApiError(400, errorMessages.invalidProjectType || "Invalid project type."));
+  }
+  try {
+    const [projects] = await pool.query(nativeQueries.getGroupProject, [
+      userId,
+      type,
+    ]);
+    if (projects.length === 0) {
+      return next(new ApiError(404, errorMessages.projectNotFound));
+    }
+    return responseHandler(
+      200,
+      true,
+      successMessages.projectFetched ,
+      projects,
+      res
+    );
+  } catch (error) {
+    console.error("Error fetching projects:", error);
+    return next(new ApiError(500, errorMessages.internalServerError));
+  }
+}
 export async function editGroupTask(req, res, next) {
-  const { taskId, userId, deadline, description, status, type } = req.body;
+  const { taskId, userId, deadline, description, status, type, projectId } = req.body;
   if (type != "group") {
     return next(new ApiError(400, errorMessages.invalidTaskType || "Invalid task type."));
+  }
+  const isOwner = await pool.query(nativeQueries.getProjectType , [ projectId]);
+  if(isOwner[0][0].type != "group"){
+      return next(new ApiError(400 , errorMessages.invalidProjectType || "Invalid project type."));
+  }
+  if(isOwner[0][0].owner != userId){
+      return next(new ApiError(403 , errorMessages.unauthorizedUser || "You are not authorized to change the status of this task."));
   }
   const fieldsToUpdate = [];
   const values = [];
@@ -92,5 +124,29 @@ export async function deleteGroupTask(req, res, next) {
   } catch (error) {
     console.error("Error deleting task:", error);
     return next(new ApiError(500, errorMessages.internalServerError));
+  }
+}
+
+export async function changeGroupTaskStatus(req,res,next){
+     
+  const {userId, projectId, status, taskId, } = req.body;
+
+  try {   
+      const isOwner = await pool.query(nativeQueries.getProjectType , [ projectId]);
+      if(isOwner[0][0].type != "group"){
+          return next(new ApiError(400 , errorMessages.invalidProjectType || "Invalid project type."));
+      }
+      if(isOwner[0][0].owner != userId){
+          return next(new ApiError(403 , errorMessages.unauthorizedUser || "You are not authorized to change the status of this task."));
+      }
+
+      const updatedRows = await pool.query(nativeQueries.changeStatus , [status , taskId]);
+      if(updatedRows[0].affectedRows === 0){
+          return next(new ApiError(404 , errorMessages.taskNotFound || "Task not found."));
+      }
+      return responseHandler(200 , true , "status changed" , [] , res); 
+  } catch (error) {
+      console.log(error);
+      return next(new ApiError(500 , error));
   }
 }

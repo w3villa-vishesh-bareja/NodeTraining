@@ -124,37 +124,22 @@ export async function createTask(req,res,next){
     const {userId, projectId, taskName, description, type, deadline} = req.body;
     let {assigned_to} = req.body;
 
+
+    console.log("project is assigned to",assigned_to);
     if(!assigned_to){
         assigned_to = null
     }
-    const [userType] = await pool.query(nativeQueries.getUserRole, [projectId, userId]);
-    if (!userType || userType.length === 0) {
-        return next(new ApiError(400, errorMessages.userNotInProject));
-    }
-    if (userType[0].role !== USER_ROLE.OWNER && userType[0].role !== USER_ROLE.ADMIN) {
-        return next( new ApiError(400, "This action is only allowed for project owner or admin"));
-    }
-    if(assigned_to){
-        try {
-            const [members] = await pool.query(nativeQueries.getProjectMembers, [projectId]);
-            if (!members || members.length === 0) {    // if project does not have any members
-                throw new ApiError(400, errorMessages.noMembersFound);
-            }
-            const isMember = members.some(member => member.user_id === assigned_to[0]);
-            if (!isMember) {   // if assigned user is not a member of the project
-                throw new ApiError(400, errorMessages.assignedUserNotMember);
-            }       
-        } catch (error) {
-            console.error(error);
-            return next(new ApiError(500, error));
-        }
-    }
+
     try {
         if(type == TASK_TYPE.GROUP){
             const isAuthorised = await tierCheckHandler(userId , 2);
             const isgroupProject = await pool.query(nativeQueries.getProjectType , [projectId]);
+
             if(isgroupProject[0][0].type != TASK_TYPE.GROUP){
                 return next(new ApiError(400 , errorMessages.invalidTaskType));
+            }
+            if(isgroupProject[0][0].owner != userId){
+                return next(new ApiError(400 , errorMessages.userNotInProject));
             }
             if(!isAuthorised){
                 return next(new ApiError(403 , errorMessages.tierAuthorizationFailed));

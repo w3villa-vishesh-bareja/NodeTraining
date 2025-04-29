@@ -10,6 +10,7 @@ router.delete("/deleteSimpleTaskSingle", deleteSimpleTaskSingle);
 router.post("/getSimpleTasks", getSimpleTasks);
 router.post('/createTask', createTask);
 router.patch('/changeStatus',changeStatus);
+router.patch('/changeGroupTaskStatus')
 router.post('/getTasks',getTask);
 router.post('/changeAssignedTo',changeAssignedTo);
 router.delete('/deleteTask',deleteTask);

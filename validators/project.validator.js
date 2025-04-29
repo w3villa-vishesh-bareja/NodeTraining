@@ -22,10 +22,6 @@ export const createTaskSchema = Joi.object({
   description: Joi.string().optional(),
   type: Joi.string().valid('group', 'collaborative').required(),
   deadline: Joi.date().optional(),
+  assigned_to:Joi.array().items(Joi.number()).required(),
 
-  assigned_to: Joi.when('type',{
-    is:'collaborative',
-    then:Joi.array().items(Joi.number()).required(),
-    otherwise:Joi.forbidden(),
-  })
 })
