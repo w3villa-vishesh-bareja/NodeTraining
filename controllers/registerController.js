@@ -9,7 +9,7 @@ import fs from 'fs'
 const nativeQueries = JSON.parse(
   fs.readFileSync(new URL('../nativequeries/nativeQueries.json', import.meta.url))
 );
-const errorMessagesConfig = JSON.parse(
+const errorMessages = JSON.parse(
   fs.readFileSync(new URL('../config/errorMessages.json', import.meta.url))
 );
 const successMessages = JSON.parse(
