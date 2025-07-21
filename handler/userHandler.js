@@ -1,5 +1,14 @@
 import pool, { genTokenForVerification } from "../config/dbService.js";
-import nativeQueries from "../nativequeries/nativeQueries.json" assert { type: "json" };
+import fs from 'fs'
+const nativeQueries = JSON.parse(
+  fs.readFileSync(new URL('../nativequeries/nativeQueries.json', import.meta.url))
+);
+const errorMessagesConfig = JSON.parse(
+  fs.readFileSync(new URL('../config/errorMessages.json', import.meta.url))
+);
+const successMessages = JSON.parse(
+  fs.readFileSync(new URL('../config/successMessages.json', import.meta.url))
+);
 import mailer from "../utils/mailHandler.js";
 
 export async function updateToken(id, verificationToken, email, connection) {

@@ -1,12 +1,12 @@
 import mysql from "mysql2/promise";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import errorMessages from './errorMessages.json' assert {type : 'json'}
-import fs from 'fs'
+const errorMessages = JSON.parse(
+  fs.readFileSync(new URL('./errorMessages.json', import.meta.url))
+);import fs from 'fs'
 import { configDotenv } from "dotenv";
 configDotenv()
 
-console.log(process.env.MYSQL_USER)
 export const pool = mysql.createPool({
   host: process.env.MYSQL_HOST,
   user: process.env.MYSQL_USER,

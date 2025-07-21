@@ -5,9 +5,16 @@ import pool, {
     genToken,
   } from "../config/dbService.js";
 import joi from "joi";
-import nativeQueries from "../nativequeries/nativeQueries.json" assert { type: "json" };
-import errorMessages from "../config/errorMessages.json" assert { type: "json" };
-import successMessages from "../config/successMessages.json" assert { type: "json" };
+import fs from 'fs'
+const nativeQueries = JSON.parse(
+  fs.readFileSync(new URL('../nativequeries/nativeQueries.json', import.meta.url))
+);
+const errorMessagesConfig = JSON.parse(
+  fs.readFileSync(new URL('../config/errorMessages.json', import.meta.url))
+);
+const successMessages = JSON.parse(
+  fs.readFileSync(new URL('../config/successMessages.json', import.meta.url))
+);
 import { ApiError } from "../utils/ApiError.js";
 import logger from "../logger/index.js";
 import ApiResponse from "../utils/ApiResponse.js";
@@ -144,9 +151,9 @@ export async function sendOtp(req,res,next){
         return next(new ApiError(400, errorMessages.validationError, [error.message]));
     }
 
-    const{number , unique_id} = req.body
+    const{number , unique_id} = req.body;
     if(!unique_id){
-        return next(new ApiError(400 , errorMessages.validationError + "unique_id is required"))
+        return next(new ApiError(400 , errorMessages.validationError + "unique_id is required"));
     }
 
     try{
@@ -156,33 +163,47 @@ export async function sendOtp(req,res,next){
         for (let index = 0; index < 4; index++) {
           OTP += digits[Math.floor(Math.random() * 10)];
         }
-        const [result] = await connection.query(nativeQueries.getOtpVerificationStatus,[unique_id])
-        const user = result[0];
+        
+        const [result] = await connection.query(nativeQueries.getOtpVerificationStatus,[unique_id]);
+        
         if(result.length > 0){
+            const user = result[0];
             //check if verified
             if(user.isVerified == 1){
-            //if it was verified this shouldnt be called 
-            // get the nextAction from the users table to redirect the user to valid step
-            const [action] = await pool.query(nativeQueries.getUser,[null, unique_id , null]);
-            return next(new ApiError(409,errorMessages.numberExists, [{next_action : action[0].next_action,phone_number:action[0].phone_number}]))
+                //if it was verified this shouldnt be called 
+                const [action] = await pool.query(nativeQueries.getUser,[null, unique_id , null]);
+                return next(new ApiError(409,errorMessages.numberExists, [{next_action : action[0].next_action,phone_number:action[0].phone_number}]));
 
-            }else if(user.isVerified ==0){
-                console.log(OTP)
-                //if status is not verified , update otp
+            } else if(user.isVerified == 0){
+
+                // --- RATE LIMITING LOGIC START ---
+
+                const lastSentAt = new Date(user.last_seen_at);
+                const now = new Date();
+                const timeDiffSeconds = (now.getTime() - lastSentAt.getTime()) / 1000;
+
+                if (timeDiffSeconds < 60) {
+                    const waitTime = Math.ceil(60 - timeDiffSeconds);
+                    // Return a 429 Too Many Requests error
+                    return next(new ApiError(429, `Please wait ${waitTime} more seconds before requesting a new OTP.`));
+                }
+                // --- RATE LIMITING LOGIC END ---
+
+                console.log(OTP);
+                //if status is not verified , update otp and last_seen_at timestamp
                 res.locals.data = await updateInOtp(unique_id, OTP , number ,connection, next);
-                next(w3villa)
+                next();
             }
-        }else{
-            console.log(OTP)
+        } else {
+            console.log(OTP);
             //if the user is not in otp_verifications insert in the table
             res.locals.data = await insertIntoOtp(unique_id,number , OTP, connection , next);
-            next()
+            next();
         }
     }catch(error){
-        console.log(error)
-        return next(new ApiError(500 , errorMessages.internalServerError ,[error]))
+        console.log(error);
+        return next(new ApiError(500 , errorMessages.internalServerError ,[error]));
     }
-
 }
 
 export async function verifyOtp(req,res,next) {

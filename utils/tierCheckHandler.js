@@ -1,7 +1,15 @@
 import { TIER } from "../config/appConstants.js";
 import pool from "../config/dbService.js"
-import nativeQueries from "../nativequeries/nativeQueries.json" assert { type: "json" };
-
+import fs from 'fs'
+const nativeQueries = JSON.parse(
+  fs.readFileSync(new URL('../nativequeries/nativeQueries.json', import.meta.url))
+);
+const errorMessagesConfig = JSON.parse(
+  fs.readFileSync(new URL('../config/errorMessages.json', import.meta.url))
+);
+const successMessages = JSON.parse(
+  fs.readFileSync(new URL('../config/successMessages.json', import.meta.url))
+);
 
 export const tierCheckHandler = async (receiverId , tierToCheck) => {
     if(receiverId){

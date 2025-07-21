@@ -1,7 +1,14 @@
 import pool, { genTokenForVerification } from "../config/dbService.js";
-import nativeQueries from "../nativequeries/nativeQueries.json" assert { type: "json" };
-import errorMessages from "../config/errorMessages.json" assert { type: "json" };
-import successMessages from "../config/successMessages.json" assert { type: "json" };
+import fs from 'fs'
+const nativeQueries = JSON.parse(
+  fs.readFileSync(new URL('../nativequeries/nativeQueries.json', import.meta.url))
+);
+const errorMessages = JSON.parse(
+  fs.readFileSync(new URL('../config/errorMessages.json', import.meta.url))
+);
+const successMessages = JSON.parse(
+  fs.readFileSync(new URL('../config/successMessages.json', import.meta.url))
+);
 import { hash, generateRandomString } from "../config/dbService.js";
 import { NEXT_ACTIONS } from "../config/appConstants.js";
 import redis from "../config/redis.js";

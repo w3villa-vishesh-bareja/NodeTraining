@@ -1,9 +1,16 @@
 import pool from "../config/dbService.js";
+import fs from 'fs'
 import { ApiError } from "../utils/ApiError.js";
-import nativeQueries from "../nativequeries/nativeQueries.json" assert { type: "json" };
-import errorMessages from "../config/errorMessages.json" assert { type: "json" };
-import successMessages from "../config/successMessages.json" assert { type: "json" };
-import responseHandler from "../handler/responseHandler.js";
+const nativeQueries = JSON.parse(
+    fs.readFileSync(new URL('../nativequeries/nativeQueries.json', import.meta.url))
+  );
+  const errorMessages = JSON.parse(
+    fs.readFileSync(new URL('../config/errorMessages.json', import.meta.url))
+  );
+  const successMessages = JSON.parse(
+    fs.readFileSync(new URL('../config/successMessages.json', import.meta.url))
+  );
+  import responseHandler from "../handler/responseHandler.js";
 import { ensureCollaborativeProject, ensureProjectOwner, taskCreator } from "../handler/projectHandler.js";
 import {inviteUserSchema , fetchInvitationsSchema , acceptNotificationSchema} from "../validators/collabProject.validator.js"
 import { tierCheckHandler } from "../utils/tierCheckHandler.js";

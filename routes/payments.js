@@ -3,7 +3,8 @@ import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 import pool from '../config/dbService.js';
-import nativeQueries from '../nativequeries/nativeQueries.json' assert { type: 'json' };
+import fs from 'fs';
+const nativeQueries = JSON.parse(fs.readFileSync(new URL('../nativequeries/nativeQueries.json', import.meta.url)));
 dotenv.config();
 const router = express.Router();
 
