@@ -20,7 +20,7 @@ export const verifyJwt = async (req, res, next) => {
     if (!decoded) {
       return res
         .status(403)
-        .json({ message: "Unauthasdadorized: Invalid token" });
+        .json({ message: "unauthorized: Invalid token" });
     }
     req.user = { ...decoded, token };
     console.log("User after decoding:", req.user);

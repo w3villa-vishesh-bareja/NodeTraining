@@ -2,7 +2,7 @@ import pool from "../config/dbService.js";
 import { ApiError } from "../utils/ApiError.js";
 import nativeQueries from "../nativequeries/nativeQueries.json" assert { type: "json" };
 import errorMessages from "../config/errorMessages.json" assert { type: "json" };
-import sucessMessages from "../config/successMessages.json" assert { type: "json" };
+import successMessages from "../config/successMessages.json" assert { type: "json" };
 import responseHandler from "../handler/responseHandler.js";
 import { ensureCollaborativeProject, ensureProjectOwner, taskCreator } from "../handler/projectHandler.js";
 import {inviteUserSchema , fetchInvitationsSchema , acceptNotificationSchema} from "../validators/collabProject.validator.js"
@@ -28,7 +28,7 @@ export async function inviteUsers(req,res,next){
             return next(new ApiError(403 , errorMessages.tierAuthorizationFailed));
         }
         const insert = await pool.query(nativeQueries.createInvitation , [userId ,receiverId , projectId]);
-        return responseHandler(201 , true , sucessMessages.invitationSent,[],res);
+        return responseHandler(201 , true , successMessages.invitationSent,[],res);
     } catch (error) {
         console.log(error);
         return next(new ApiError(500,error.message))
@@ -45,7 +45,7 @@ export async function fetchInvitations(req,res,next){
     const {userId} = req.body;
     try {
         const invitations =  await pool.query(nativeQueries.fetchInviations,[userId]);
-        return responseHandler(200 , true , sucessMessages.invitationsFetched,[invitations[0]],res);
+        return responseHandler(200 , true , successMessages.invitationsFetched,[invitations[0]],res);
     } catch (error) {
         console.log(error);
         return next(new ApiError(500,error));
@@ -82,7 +82,7 @@ export async function acceptNotification(req, res, next) {
         
         await connection.commit();
         connection.release();
-        return responseHandler(200, true, sucessMessages.invitationAccepted, [{projectId: projectId}], res);
+        return responseHandler(200, true, successMessages.invitationAccepted, [{projectId: projectId}], res);
     } catch (error) {
         console.log(error);
         await connection.rollback();
@@ -106,7 +106,7 @@ export async function rejectNotification(req, res, next) {
             return next(new ApiError(409, errorMessages.invitationAlreadyAccepted));
         }
         await pool.query(nativeQueries.rejectInvitation, [userId, projectId]);
-        return responseHandler(200, true, sucessMessages.invitationAccepted, [{projectId: projectId}], res);
+        return responseHandler(200, true, successMessages.invitationAccepted, [{projectId: projectId}], res);
     } catch (error) {
         console.log(error);
         return next(new ApiError(500, errorMessages.internalServerError ));
@@ -153,7 +153,7 @@ export async function createTask(req,res,next){
         }
         const id = await taskCreator(userId, projectId, taskName, deadline, description, assigned_to, type);
         if(id){
-            return responseHandler(201 , true , sucessMessages.taskCreated , [{taskId:id}] , res)
+            return responseHandler(201 , true , successMessages.taskCreated , [{taskId:id}] , res)
         }
     } catch (error) {
             console.log(error);
@@ -234,7 +234,7 @@ export async function getTask(req,res,next){
     const {projectId} = req.body;
     try {
         const [tasks] = await pool.query(nativeQueries.getTasks , [projectId]);
-        return responseHandler(200 , true , sucessMessages.tasksFetched , [tasks] , res);
+        return responseHandler(200 , true , successMessages.tasksFetched , [tasks] , res);
     } catch (error) {
         console.log(error);
         return next(new ApiError(500 , error));
@@ -256,7 +256,7 @@ export async function deleteTask(req,res,next){
             return next(new ApiError(400 , "This task has subtasks, please delete them first",[subTasks]));
         }
         await pool.query(nativeQueries.deleteTask , [taskId]);
-        return responseHandler(200 , true , sucessMessages.taskDeleted , [] , res);
+        return responseHandler(200 , true , successMessages.taskDeleted , [] , res);
     } catch (error) {
         console.error(error);
         return next(new ApiError(500 , error));

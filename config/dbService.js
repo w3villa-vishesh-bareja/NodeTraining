@@ -2,16 +2,25 @@ import mysql from "mysql2/promise";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import errorMessages from './errorMessages.json' assert {type : 'json'}
+import fs from 'fs'
+import { configDotenv } from "dotenv";
+configDotenv()
 
-
+console.log(process.env.MYSQL_USER)
 export const pool = mysql.createPool({
-  host: "localhost",
-  user: "root",
-  password: "password",
-  database: "node_db",
+  host: process.env.MYSQL_HOST,
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
+  port: process.env.MYSQL_PORT,
+  database: process.env.MYSQL_DB,
   waitForConnections: true,
   connectionLimit: 100,
   queueLimit: 0,
+  ssl:{
+    required: true,
+    // rejectUnauthorized: false, 
+    ca: fs.readFileSync('./ca.pem').toString(),
+  }
 });
 
 async function testConnection() {
