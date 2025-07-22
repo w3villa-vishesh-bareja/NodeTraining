@@ -13,9 +13,24 @@ import paymentsRoutes from './routes/payments.js'
 import errorHandler from './middleware/errorMiddlewre.js'
 import responseMiddleware from './middleware/responseMiddleware.js'
 import fileUpload from 'express-fileupload'
+import http from 'http'
+import {Server} from 'socket.io'
+// import { registerSocketHandlers } from './handler/socketHandler.js'
 
 dotenv.config();
 const app = express();
+
+// const server = http.createServer(app);
+// const io = new Server(server,{
+//   cors: {
+//     origin: 'http://localhost:5173', 
+//     methods: ['GET', 'POST'],
+//     credentials: true
+//   }
+// });
+
+// registerSocketHandlers(io)
+
 app.use(express.json());
 app.use(helmet());
 app.use(helmet.hsts({
@@ -25,7 +40,7 @@ app.use(helmet.hsts({
 }));
 
 app.use(cors({
-    origin: ['http://localhost:5173'],
+    origin: ['https://node-frontend-test.vercel.app','http://localhost:5173'],
     methods: ['GET', 'POST', 'PATCH', 'DELETE'], 
     credentials: true, 
   }));
