@@ -99,7 +99,7 @@ export const handleGoogleCallback = async (req, res) => {
   console.log("in callback");
   if (req.user?.redirect) {
     return res.redirect(
-      `https://node-frontend-test.vercel.app//register/setUsername?email=${encodeURIComponent(
+      `https://node-frontend-test.vercel.app/register/setUsername?email=${encodeURIComponent(
         req.user.email
       )}`
     );
@@ -113,7 +113,7 @@ export const handleGoogleCallback = async (req, res) => {
       secure: false,
       sameSite: "Lax",
     })
-    .redirect("https://node-frontend-test.vercel.app//dashboard");
+    .redirect("https://node-frontend-test.vercel.app/dashboard");
 };
 
 export const setUsername = async (req, res, next) => {
