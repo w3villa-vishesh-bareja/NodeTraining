@@ -66,7 +66,7 @@ export async function updateToken(id, verificationToken, email, connection) {
       await mailer(email, verificationToken);
       await connection.commit();
       await connection.release();
-      return new ApiResponse( 200 , true , successMessages.emailSent , [{user:{email:email , unique_id : id , token : verificationToken} , next_action:NEXT_ACTIONS.EMAIL_VERIFICATION , redirect_url:"https://localhost:5173/verifyEmail"}] )
+      return new ApiResponse( 200 , true , successMessages.emailSent , [{user:{email:email , unique_id : id , token : verificationToken} , next_action:NEXT_ACTIONS.EMAIL_VERIFICATION , redirect_url:"https://node-frontend-test.vercel.app//verifyEmail"}] )
     } catch (err) {
         await connection.rollback();
         await connection.release();
