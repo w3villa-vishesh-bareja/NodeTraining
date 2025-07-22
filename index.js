@@ -13,8 +13,8 @@ import paymentsRoutes from './routes/payments.js'
 import errorHandler from './middleware/errorMiddlewre.js'
 import responseMiddleware from './middleware/responseMiddleware.js'
 import fileUpload from 'express-fileupload'
-import http from 'http'
-import {Server} from 'socket.io'
+// import http from 'http'
+// import {Server} from 'socket.io'
 // import { registerSocketHandlers } from './handler/socketHandler.js'
 
 dotenv.config();
