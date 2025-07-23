@@ -109,7 +109,7 @@ export const handleGoogleCallback = async (req, res) => {
   console.log("user in callback", token);
   res
     .cookie("token", token, {
-      httpOnly: false,
+      httpOnly: true,
       secure: true,                  // Required for cross-origin + SameSite=None
       sameSite: "None",              // Must be "None" for cross-domain
     })
