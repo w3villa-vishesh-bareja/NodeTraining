@@ -7,7 +7,7 @@ export const verifyJwt = async (req, res, next) => {
   if (authHeader && authHeader.startsWith("Bearer ")) {
     token = authHeader.split(" ")[1];
   }
-
+  console.log(req.cookies);
   if (!token && req.cookies && req.cookies.token) {
     token = req.cookies.token;
   }
