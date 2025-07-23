@@ -110,8 +110,8 @@ export const handleGoogleCallback = async (req, res) => {
   res
     .cookie("token", token, {
       httpOnly: false,
-      secure: false,
-      sameSite: "Lax",
+      secure: true,                  // Required for cross-origin + SameSite=None
+      sameSite: "None",              // Must be "None" for cross-domain
     })
     .redirect("https://node-frontend-test.vercel.app/dashboard");
 };
