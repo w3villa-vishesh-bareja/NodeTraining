@@ -9,7 +9,10 @@ export const verifyJwt = async (req, res, next) => {
   }
 
   console.log("cookie in req",req.cookies)
-  console.log("full req obj",req);
+  // console.log("full req obj",req);
+  console.log("full header",req.headers);
+  console.log("full header cookie",req.headers.cookies);
+  console.log("full req cookie",req.cookie);
   if (!token && req.cookies && req.cookies.token) {
     token = req.cookies.token;
   }
