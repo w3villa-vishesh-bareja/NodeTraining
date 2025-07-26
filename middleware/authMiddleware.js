@@ -14,7 +14,7 @@ export const verifyJwt = async (req, res, next) => {
   console.log("full req obj",req.headers.cookie?.token);
 
   if (!token && req.headers.cookie) {
-    tokenString = req.headers.cookie;
+    let tokenString = req.headers.cookie;
     token = tokenString.split("=")[1];
     console.log("token",token)
   }
