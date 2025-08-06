@@ -124,8 +124,9 @@ export const login = async (req, res , next ) => {
             id: user.id,
             name: user.name,
             email: user.email,
-            next_action:users[0].next_action,
-            unique_id:users[0].unique_id
+            next_action: users[0].next_action,
+            unique_id: users[0].unique_id,
+            isAdmin: user.isAdmin
           },
           token: token,
         },
@@ -249,6 +250,51 @@ export async function getUser(req,res,next){
   const user = result[0];
   res.locals.data  = new ApiResponse(200 , true , successMessages.userFound , [{user:user}])
   return next();
+}
+export async function editProfile(req, res, next) {
+  const { id } = req.user;
+  const updateFields = req.body;
+
+  const allowedFields = ['name', 'firstname', 'lastname', 'phone_number'];
+
+  const filteredFields = Object.entries(updateFields).filter(([key]) =>
+    allowedFields.includes(key)
+  );
+
+  if (filteredFields.length === 0) {
+    return next(new ApiError(400, errorMessages.noFieldsToUpdate));
+  }
+
+  try {
+    const setClauses = [];
+    const values = [];
+
+    for (const [key, value] of filteredFields) {
+      setClauses.push(`${key} = ?`);
+      values.push(value);
+    }
+
+    values.push(id);
+
+    const query = `UPDATE users SET ${setClauses.join(', ')} WHERE unique_id = ?`;
+    const [result] = await pool.query(query, values);
+
+    if (result.affectedRows === 0) {
+      return next(new ApiError(404, errorMessages.userNotFound));
+    }
+
+    const [updatedUserRows] = await pool.query(nativeQueries.getProfile, [id, null]);
+    const updatedUser = updatedUserRows[0];
+    
+    res.status(200).send({
+      success: true,
+      message: "Profile updated",
+      data: [updatedUser]
+  });    
+  } catch (error) {
+    console.error("Error editing profile:", error);
+    return next(new ApiError(500, "Error editing profile"));
+  }
 }
 
 // export const sendEmail = async (req, res) => {

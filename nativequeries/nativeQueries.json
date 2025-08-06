@@ -1,5 +1,5 @@
 {
-    "getUser" : "SELECT id , name , unique_id , next_action , email, register_complete , password , email_verified FROM users WHERE email = ? OR unique_id = ? OR name = ?",
+    "getUser" : "SELECT id , name , unique_id , next_action , email, register_complete , password , email_verified , isAdmin , isActive FROM users WHERE email = ? OR unique_id = ? OR name = ?",
 
     "createUser": "INSERT INTO users (name, email, password , phone_number,verified_methods) VALUES (?, ?, ?, ?, ?)",
 
@@ -29,7 +29,7 @@
 
     "insertInOtp": "INSERT INTO otp_verifications (user_id , phone_number , otp) VALUES (?, ?, ?)",
 
-    "updateOtp": "UPDATE otp_verifications SET otp = ? , phone_number = ? , expires_at = (CURRENT_TIMESTAMP + INTERVAL 10 MINUTE) WHERE user_id = ?",
+    "updateOtp": "UPDATE otp_verifications SET otp = ? , phone_number = ? , expires_at = (CURRENT_TIMESTAMP + INTERVAL 10 MINUTE), last_seen_at = CURRENT_TIMESTAMP WHERE user_id = ?",
 
     "getOtp": "SELECT otp FROM otp_verifications WHERE phone_number = ?",
 
@@ -61,7 +61,7 @@
 
     "updateProfileImage": "UPDATE users SET profile_image_url =? , next_action = ? , register_complete = true WHERE email = ?",
 
-    "getProfile":"SELECT id ,name , firstname , lastname , phone_number , email , unique_id , profile_image_url , tier From users WHERE unique_id= ? OR email = ?" ,
+    "getProfile":"SELECT id ,name , firstname , lastname , phone_number , email , unique_id , profile_image_url , tier , isAdmin From users WHERE unique_id= ? OR email = ?" ,
 
     "checkName" : "SELECT name, id FROM users WHERE name LIKE ?",
 
@@ -125,8 +125,8 @@
 
     "deleteProject": "DELETE FROM projects WHERE unique_id = ?",
 
-    "getGroupProject" : "SELECT * FROM projects WHERE owner = ? AND type = ?"
+    "getGroupProject" : "SELECT * FROM projects WHERE owner = ? AND type = ?",
 
-
+    "blockUser": "UPDATE users set isActive = ? WHERE id = ? "
 
 }

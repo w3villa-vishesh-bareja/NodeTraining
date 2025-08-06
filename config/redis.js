@@ -13,6 +13,6 @@ try {
     await redis.connect();
     console.log("redis connected")
 } catch (error) {
-    throw new Error(error)
+    console.error("❌ Redis Client Error:", error.message);
 }
 export default redis;

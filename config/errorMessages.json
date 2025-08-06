@@ -42,7 +42,8 @@
   "assignedUserNotMember": "Assigned user is not a member of the project.",
   "invalidToken": "Invalid token.",
   "invitationNotFound": "Invitation not found.",
-  "inviteSelf": "You cannot invite yourself."
+  "inviteSelf": "You cannot invite yourself.",
+  "notAuthorized": "User not authorized to perform this action"
   
  
  

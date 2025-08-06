@@ -10,9 +10,12 @@ import profileRoutes from './routes/profileRoute.js'
 import todoRoutes from "./routes/todoRoutes.js"
 import projectRoutes from "./routes/projectRoute.js"
 import paymentsRoutes from './routes/payments.js'
+import adminRoutes from './routes/adminRoutes.js'
 import errorHandler from './middleware/errorMiddlewre.js'
 import responseMiddleware from './middleware/responseMiddleware.js'
 import fileUpload from 'express-fileupload'
+import {verifyJwt} from './middleware/authMiddleware.js'
+import cookieParser from 'cookie-parser'
 // import http from 'http'
 // import {Server} from 'socket.io'
 // import { registerSocketHandlers } from './handler/socketHandler.js'
@@ -53,11 +56,12 @@ app.use(passport.initialize());
 
 app.use('/register',registerRoute , responseMiddleware);
 app.use('/login',loginRoutes , responseMiddleware);
-app.use('/user',profileRoutes , responseMiddleware);
+app.use('/user',profileRoutes );
 app.use('/task', todoRoutes );
 app.use('/project', projectRoutes )
 app.use('/',googleRoutes);
 app.use('/payments', paymentsRoutes);
+app.use('/admin', adminRoutes, responseMiddleware);
 
 
 app.use(errorHandler);
